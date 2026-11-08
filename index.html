@@ -198,6 +198,23 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
 .primary { width: 100%; padding: 14px; border-radius: 14px; background: var(--accent); color: var(--accent-ink); font-weight: 700; font-size: 16px; }
 .ghost { width: 100%; padding: 12px; border-radius: 14px; border: 1px solid var(--line); color: var(--muted); }
 .ghost.danger { color: var(--danger); }
+.src { font-size: 11px; color: var(--accent); margin-left: 4px; }
+.results { display: flex; flex-direction: column; max-height: 300px; overflow-y: auto; border: 1px solid var(--line); border-radius: 14px; background: var(--bg); }
+.results .hint { margin: 0; padding: 14px; font-size: 13px; color: var(--muted); }
+.res { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 11px 14px; text-align: left; border-top: 1px solid var(--line); }
+.res:first-child { border-top: 0; }
+.res:hover { background: var(--surface-2); }
+.res .rn { min-width: 0; overflow-wrap: anywhere; font-size: 14px; }
+.res .rn em { font-style: normal; font-size: 11px; color: var(--muted); margin-left: 6px; padding: 1px 6px; border: 1px solid var(--line); border-radius: 6px; white-space: nowrap; }
+.res .rk { flex: none; text-align: right; font-weight: 600; font-size: 14px; color: var(--accent); }
+.res .rk small { display: block; font-weight: 400; font-size: 11px; color: var(--muted); }
+.picked { border: 1px solid var(--accent); border-radius: 14px; padding: 12px 14px; display: flex; flex-direction: column; gap: 10px; background: color-mix(in srgb, var(--accent) 7%, var(--bg)); }
+.pk-top { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+.pk-name { font-weight: 600; min-width: 0; overflow-wrap: anywhere; }
+.pk-per { font-size: 12px; color: var(--muted); }
+.amt { display: flex; align-items: center; gap: 8px; }
+.amt input { flex: 1; min-width: 0; }
+.amt span { color: var(--muted); }
 .err { color: var(--danger); font-size: 13px; min-height: 1em; }
 
 /* month calendar */
@@ -511,7 +528,7 @@ canvas#fx { position: fixed; inset: 0; pointer-events: none; z-index: 70; width:
           const req = slot !== '간식';
           return `<div class="slot">
             <div class="slot-h"><span class="nm">${slot}${req ? (items.length ? '<span class="ok">✓</span>' : '<span class="req">필수</span>') : '<span class="req">선택</span>'}</span><span class="sum num">${sum.toLocaleString()} kcal</span></div>
-            ${items.map((m) => `<div class="food"><span class="fn">${esc(m.name)}</span><span class="fk num">${Number(m.kcal).toLocaleString()} kcal</span>${ro ? '' : `<button class="del" data-act="delM" data-id="${m.id}" aria-label="삭제">✕</button>`}</div>`).join('')}
+            ${items.map((m) => `<div class="food"><span class="fn">${esc(m.name)}</span><span class="fk num">${m.amt ? `${m.amt}${esc(m.unit || 'g')} · ` : ''}${Number(m.kcal).toLocaleString()} kcal</span>${ro ? '' : `<button class="del" data-act="delM" data-id="${m.id}" aria-label="삭제">✕</button>`}</div>`).join('')}
             ${ro ? '' : `<button class="slot-add" data-act="addM" data-slot="${slot}">+ ${slot} 기록하기</button>`}
           </div>`;
         }).join('')}`;
@@ -622,35 +639,108 @@ canvas#fx { position: fixed; inset: 0; pointer-events: none; z-index: 70; width:
     });
   }
 
+  /* 식약처 음식 영양성분 DB (foods.json) */
+  let FOODS = null, foodsLoading = null;
+  const norm = (s) => s.toLowerCase().replace(/[\s_()\[\]·,.-]/g, '');
+  const pretty = (n) => n.replace(/_/g, ' · ');
+  function loadFoods() {
+    if (FOODS) return Promise.resolve(FOODS);
+    if (!foodsLoading) {
+      foodsLoading = fetch('foods.json').then((r) => { if (!r.ok) throw new Error(r.status); return r.json(); }).then((j) => {
+        FOODS = { brands: j.brands, items: j.items.map((it) => ({ n: it[0], b: j.brands[it[1]] || '', k: it[2], w: it[3], u: it[4] ? 'ml' : 'g', key: norm(it[0] + (j.brands[it[1]] || '')) })) };
+        return FOODS;
+      }).catch((e) => { foodsLoading = null; throw e; });
+    }
+    return foodsLoading;
+  }
+  function searchFoods(q) {
+    const nq = norm(q);
+    if (!FOODS || !nq) return [];
+    const out = [];
+    for (const f of FOODS.items) {
+      const nn = norm(f.n);
+      let s;
+      if (nn === nq) s = 0;
+      else if (nn.startsWith(nq)) s = 1;
+      else if (nn.includes(nq)) s = 2;
+      else if (f.key.includes(nq)) s = 3;
+      else continue;
+      out.push([s + (f.b ? 0.5 : 0), f.n.length, f]);
+    }
+    out.sort((a, b) => a[0] - b[0] || a[1] - b[1]);
+    return out.slice(0, 40).map((x) => x[2]);
+  }
+
   function openMeal(slot) {
+    let pick = null;
     openSheet(`
       <h3>${esc(slot)} 기록</h3>
       <form id="f" class="sheet-in" style="gap:14px">
         <div class="field"><label>끼니</label>${segHTML('slot', MEAL_SLOTS, slot)}</div>
-        <div class="field"><label>자주 먹는 음식 (누르면 바로 입력)</label>
-          <div class="chips">${PRESETS.map(([n, k]) => `<button type="button" class="chip" data-n="${esc(n)}" data-k="${k}">${esc(n)}<span>${k}</span></button>`).join('')}</div>
+        <div class="field"><label for="fq">음식 검색 <span class="src">식약처 영양성분 DB</span></label>
+          <input id="fq" type="search" placeholder="예: 김치찌개, 아메리카노, 떡볶이" autocomplete="off" enterkeyhint="search">
+        </div>
+        <div class="results" id="fres"><p class="hint" id="fhint">음식 이름을 입력하면 칼로리를 자동으로 찾아줘요.</p></div>
+        <div class="picked" id="fpick" hidden>
+          <div class="pk-top"><span class="pk-name" id="pkn"></span><button type="button" class="link" id="pkx">다시 검색</button></div>
+          <div class="pk-per" id="pkper"></div>
+          <div class="field"><label for="pa">먹은 양</label>
+            <div class="amt"><input id="pa" type="number" inputmode="decimal" min="0" step="any"><span id="pu">g</span></div>
+          </div>
+          <div class="seg" id="pmul">${[0.5, 1, 1.5, 2].map((m) => `<button type="button" data-m="${m}" aria-pressed="${m === 1}">${m}인분</button>`).join('')}</div>
         </div>
         <div class="frow">
-          <div class="field"><label for="mk">칼로리</label><input id="mk" type="number" inputmode="numeric" min="0" max="5000" placeholder="kcal"></div>
-          <div class="field"><label for="mn">음식</label><input id="mn" maxlength="40" placeholder="예: 닭가슴살 샐러드" autocomplete="off"></div>
+          <div class="field"><label for="mk">칼로리</label><input id="mk" type="number" inputmode="numeric" min="0" max="9000" placeholder="kcal"></div>
+          <div class="field"><label for="mn">음식</label><input id="mn" maxlength="60" placeholder="검색하거나 직접 입력" autocomplete="off"></div>
         </div>
         <div class="err" id="ferr"></div>
         <button class="primary">기록하기</button>
         <button type="button" class="ghost" data-dismiss>취소</button>
       </form>`, (root) => {
       wireSeg(root, 'slot', (v) => (slot = v));
-      root.querySelector('.chips').addEventListener('click', (e) => {
-        const c = e.target.closest('.chip'); if (!c) return;
-        root.querySelector('#mn').value = c.dataset.n;
-        root.querySelector('#mk').value = c.dataset.k;
+      const fq = root.querySelector('#fq'), fres = root.querySelector('#fres'), fpick = root.querySelector('#fpick');
+      const pa = root.querySelector('#pa'), mk = root.querySelector('#mk'), mn = root.querySelector('#mn');
+      let shown = [];
+      const recalc = () => { if (!pick) return; const a = Number(pa.value); mk.value = a > 0 ? Math.round((pick.k * a) / 100) : ''; };
+      const setMul = (m) => root.querySelectorAll('#pmul button').forEach((b) => b.setAttribute('aria-pressed', String(Number(b.dataset.m) === m)));
+      const draw = () => {
+        const q = fq.value.trim();
+        if (!q) { fres.innerHTML = '<p class="hint">음식 이름을 입력하면 칼로리를 자동으로 찾아줘요.</p>'; return; }
+        if (!FOODS) { fres.innerHTML = '<p class="hint">음식 데이터를 불러오는 중…</p>'; return; }
+        shown = searchFoods(q);
+        fres.innerHTML = shown.length ? shown.map((f, i) => `<button type="button" class="res" data-i="${i}">
+            <span class="rn">${esc(pretty(f.n))}${f.b ? `<em>${esc(f.b)}</em>` : ''}</span>
+            <span class="rk num">${Math.round((f.k * f.w) / 100).toLocaleString()} kcal<small>1인분 ${f.w}${f.u}</small></span>
+          </button>`).join('') : `<p class="hint">"${esc(q)}" 검색 결과가 없어요. 짧게 써 보거나 아래에 칼로리를 직접 적어주세요.</p>`;
+      };
+      loadFoods().then(draw).catch(() => { fres.innerHTML = '<p class="hint">음식 데이터를 불러오지 못했어요. 칼로리를 직접 적어주세요.</p>'; });
+      let t; fq.addEventListener('input', () => { clearTimeout(t); t = setTimeout(draw, 120); });
+      fq.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); draw(); } });
+      fres.addEventListener('click', (e) => {
+        const b = e.target.closest('.res'); if (!b) return;
+        pick = shown[Number(b.dataset.i)];
+        root.querySelector('#pkn').textContent = pretty(pick.n) + (pick.b ? ` (${pick.b})` : '');
+        root.querySelector('#pkper').textContent = `100${pick.u}당 ${pick.k}kcal · 1인분 ${pick.w}${pick.u}`;
+        root.querySelector('#pu').textContent = pick.u;
+        pa.value = pick.w; setMul(1); recalc();
+        mn.value = (pretty(pick.n) + (pick.b ? ` (${pick.b})` : '')).slice(0, 60);
+        fres.hidden = true; fpick.hidden = false;
       });
+      root.querySelector('#pkx').onclick = () => { pick = null; fpick.hidden = true; fres.hidden = false; mk.value = ''; mn.value = ''; fq.focus(); };
+      root.querySelector('#pmul').addEventListener('click', (e) => {
+        const b = e.target.closest('button'); if (!b || !pick) return;
+        const m = Number(b.dataset.m); setMul(m); pa.value = Math.round(pick.w * m * 10) / 10; recalc();
+      });
+      pa.addEventListener('input', () => { setMul(-1); recalc(); });
       root.querySelector('#f').onsubmit = (e) => {
         e.preventDefault();
-        const name = root.querySelector('#mn').value.trim();
-        const kcal = Math.round(Number(root.querySelector('#mk').value));
-        if (!name) { root.querySelector('#ferr').textContent = '음식 이름을 적어주세요.'; return; }
-        if (!Number.isFinite(kcal) || kcal < 0 || root.querySelector('#mk').value === '') { root.querySelector('#ferr').textContent = '칼로리를 숫자로 적어주세요. 모르면 0도 괜찮아요.'; return; }
-        ensureDay(sel).meals.push({ id: uid(), slot, name, kcal });
+        const name = mn.value.trim();
+        const kcal = Math.round(Number(mk.value));
+        if (!name) { root.querySelector('#ferr').textContent = '음식을 검색해서 고르거나 이름을 적어주세요.'; return; }
+        if (!Number.isFinite(kcal) || kcal < 0 || mk.value === '') { root.querySelector('#ferr').textContent = '칼로리를 숫자로 적어주세요. 모르면 0도 괜찮아요.'; return; }
+        const m = { id: uid(), slot, name, kcal };
+        if (pick && Number(pa.value) > 0) { m.amt = Number(pa.value); m.unit = pick.u; }
+        ensureDay(sel).meals.push(m);
         closeSheet(); commit(sel); toast(`${slot}에 ${kcal}kcal 기록했어요`);
       };
     });
