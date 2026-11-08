@@ -220,6 +220,14 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
 .pk-kcal { font-family: var(--font-display); font-size: 26px; color: var(--accent); line-height: 1.1; }
 .manual summary { cursor: pointer; font-size: 13px; color: var(--muted); padding: 4px 0; }
 .manual[open] summary { margin-bottom: 10px; }
+.nutline { display: flex; flex-wrap: wrap; gap: 4px 12px; font-size: 13px; }
+.nutline i { font-style: normal; color: var(--muted); font-size: 12px; }
+.nutcard { display: flex; flex-direction: column; gap: 8px; }
+.nb { display: grid; grid-template-columns: 56px 1fr 70px 40px; gap: 8px; align-items: center; font-size: 13px; }
+.nb b { text-align: right; font-weight: 600; }
+.nb b small { font-weight: 400; color: var(--muted); font-size: 11px; margin-left: 1px; }
+.nb em { font-style: normal; text-align: right; color: var(--muted); font-size: 12px; }
+.nutmini { display: block; font-size: 11px; color: var(--muted); margin-top: 2px; }
 .amt { display: flex; align-items: center; gap: 8px; }
 .amt input { flex: 1; min-width: 0; }
 .amt span { color: var(--muted); }
@@ -561,13 +569,14 @@ canvas#fx { position: fixed; inset: 0; pointer-events: none; z-index: 70; width:
           <div class="bar ${over ? 'over' : ''}"><span style="width:${kPct}%"></span></div>
           <div class="kcal-note ${over ? 'over' : ''}">${over ? `목표보다 ${(st.kcal - S.goalKcal).toLocaleString()}kcal 더 먹었어요 · 식단 퀘스트 실패 조건이에요` : `${(S.goalKcal - st.kcal).toLocaleString()}kcal 남았어요 · 아침·점심·저녁을 기록하고 목표 안으로 먹으면 식단 퀘스트 완료`}</div>
         </div>
+        ${d.meals.length ? `<div class="kcal"><div class="kcal-top"><b style="font-family:var(--font-display);font-weight:400;font-size:17px">오늘 먹은 영양소</b></div>${nutCard(d.meals, 1)}</div>` : ''}
         ${MEAL_SLOTS.map((slot) => {
           const items = d.meals.filter((m) => m.slot === slot);
           const sum = items.reduce((a, m) => a + (Number(m.kcal) || 0), 0);
           const req = slot !== '간식';
           return `<div class="slot">
             <div class="slot-h"><span class="nm">${slot}${req ? (items.length ? '<span class="ok">✓</span>' : '<span class="req">필수</span>') : '<span class="req">선택</span>'}</span><span class="sum num">${sum.toLocaleString()} kcal</span></div>
-            ${items.map((m) => `<div class="food"><span class="fn">${esc(m.name)}</span><span class="fk num">${m.amt ? `${m.amt}${esc(m.unit || 'g')} · ` : ''}${Number(m.kcal).toLocaleString()} kcal</span>${ro ? '' : `<button class="del" data-act="delM" data-id="${m.id}" aria-label="삭제">✕</button>`}</div>`).join('')}
+            ${items.map((m) => `<div class="food"><span class="fn">${esc(m.name)}${m.nut ? `<small class="nutmini num">${['c','p','f'].filter((k) => m.nut[k] != null).map((k) => ({ c: '탄', p: '단', f: '지' })[k] + ' ' + r1(m.nut[k]) + 'g').join(' · ')}</small>` : ''}</span><span class="fk num">${m.amt ? `${m.amt}${esc(m.unit || 'g')} · ` : ''}${Number(m.kcal).toLocaleString()} kcal</span>${ro ? '' : `<button class="del" data-act="delM" data-id="${m.id}" aria-label="삭제">✕</button>`}</div>`).join('')}
             ${ro ? '' : `<button class="slot-add" data-act="addM" data-slot="${slot}">+ ${slot} 기록하기</button>`}
           </div>`;
         }).join('')}`;
@@ -687,15 +696,42 @@ canvas#fx { position: fixed; inset: 0; pointer-events: none; z-index: 70; width:
     if (FOODS) return Promise.resolve(FOODS);
     if (!foodsLoading) {
       foodsLoading = fetch('foods.json').then((r) => { if (!r.ok) throw new Error(r.status); return r.json(); }).then((j) => {
-        FOODS = { brands: j.brands, items: j.items.map((it) => ({ n: it[0], b: j.brands[it[1]] || '', k: it[2], w: it[3], u: it[4] ? 'ml' : 'g', key: norm(it[0] + (j.brands[it[1]] || '')) })) };
+        FOODS = { brands: j.brands, items: j.items.map((it) => ({ n: it[0], b: j.brands[it[1]] || '', k: it[2], w: it[3], u: it[4] ? 'ml' : 'g', e: it[5] === 1, nu: it[6] || null, key: norm(it[0] + (j.brands[it[1]] || '')) })) };
         return FOODS;
       }).catch((e) => { foodsLoading = null; throw e; });
     }
     return foodsLoading;
   }
+  /* 영양소: [탄수화물, 단백질, 지방, 당류, 나트륨] — 100g(ml)당 값을 먹은 양으로 환산 */
+  const NUTS = [['c', '탄수화물', 'g', 324], ['p', '단백질', 'g', 55], ['f', '지방', 'g', 54], ['s', '당류', 'g', 100], ['na', '나트륨', 'mg', 2000]];
+  function scaleNut(nu, amt) {
+    if (!nu || !(amt > 0)) return null;
+    const o = {}; NUTS.forEach(([k], i) => { if (nu[i] >= 0) o[k] = Math.round(nu[i] * amt / 10) / 10; });
+    return Object.keys(o).length ? o : null;
+  }
+  const r1 = (v) => (v >= 100 ? Math.round(v) : Math.round(v * 10) / 10).toLocaleString();
+  function nutLine(nt) {
+    return NUTS.filter(([k]) => nt[k] != null).map(([k, label, u]) => `<span><i>${label}</i> ${r1(nt[k])}${u}</span>`).join('');
+  }
+  function sumNut(meals) {
+    const o = { c: 0, p: 0, f: 0, s: 0, na: 0 }; let n = 0;
+    meals.forEach((m) => { if (m.nut) { n++; NUTS.forEach(([k]) => { o[k] += m.nut[k] || 0; }); } });
+    return { o, n };
+  }
+  function nutCard(meals, days) {
+    const { o, n } = sumNut(meals);
+    const div = days || 1;
+    return `<div class="nutcard">
+      ${NUTS.map(([k, label, u, ref]) => { const v = o[k] / div, p = Math.min(100, (v / ref) * 100); return `<div class="nb"><span>${label}</span><div class="bar ${v > ref ? 'over' : ''}"><span style="width:${p}%"></span></div><b class="num">${r1(v)}<small>${u}</small></b><em class="num">${Math.round((v / ref) * 100)}%</em></div>`; }).join('')}
+      <p class="cap">% = 하루 영양성분 기준치 대비 (식약처: 탄수화물 324g · 단백질 55g · 지방 54g · 당류 100g · 나트륨 2,000mg)${meals.length > n ? ` · 직접 입력한 음식 ${meals.length - n}개는 영양소 정보 없이 칼로리만 계산돼요` : ''}</p>
+    </div>`;
+  }
+
   function searchFoods(q) {
     const nq = norm(q);
     if (!FOODS || !nq) return [];
+    // 띄어쓰기로 나눈 단어가 모두 들어 있으면 찾기 (예: "맥도날드 빅맥", "CU 삼각김밥")
+    const words = q.split(/s+/).map(norm).filter(Boolean);
     const out = [];
     for (const f of FOODS.items) {
       const nn = norm(f.n);
@@ -704,6 +740,7 @@ canvas#fx { position: fixed; inset: 0; pointer-events: none; z-index: 70; width:
       else if (nn.startsWith(nq)) s = 1;
       else if (nn.includes(nq)) s = 2;
       else if (f.key.includes(nq)) s = 3;
+      else if (words.length > 1 && words.every((w) => f.key.includes(w))) s = 4;
       else continue;
       out.push([s + (f.b ? 0.5 : 0), f.n.length, f]);
     }
@@ -718,12 +755,13 @@ canvas#fx { position: fixed; inset: 0; pointer-events: none; z-index: 70; width:
       <form id="f" class="sheet-in" style="gap:14px">
         <div class="field"><label>끼니</label>${segHTML('slot', MEAL_SLOTS, slot)}</div>
         <div class="field"><label for="fq">무엇을 먹었나요? <span class="src">칼로리 자동 계산 · 식약처 DB</span></label>
-          <input id="fq" type="search" placeholder="예: 김치찌개, 아메리카노, 떡볶이" autocomplete="off" enterkeyhint="search">
+          <input id="fq" type="search" placeholder="예: 김치찌개, 빅맥, 맥도날드 감자튀김" autocomplete="off" enterkeyhint="search">
         </div>
         <div class="results" id="fres"><p class="hint" id="fhint">음식 이름을 입력하면 칼로리를 자동으로 찾아줘요.</p></div>
         <div class="picked" id="fpick" hidden>
           <div class="pk-top"><span class="pk-name" id="pkn"></span><button type="button" class="link" id="pkx">다시 검색</button></div>
           <div class="pk-kcal num" id="pkk"></div>
+          <div class="nutline num" id="pkn2"></div>
           <div class="pk-per" id="pkper"></div>
           <div class="field"><label for="pa">먹은 양</label>
             <div class="amt"><input id="pa" type="number" inputmode="decimal" min="0" step="any"><span id="pu">g</span></div>
@@ -743,7 +781,7 @@ canvas#fx { position: fixed; inset: 0; pointer-events: none; z-index: 70; width:
       const fq = root.querySelector('#fq'), fres = root.querySelector('#fres'), fpick = root.querySelector('#fpick');
       const pa = root.querySelector('#pa'), mk = root.querySelector('#mk'), mn = root.querySelector('#mn');
       let shown = [];
-      const recalc = () => { if (!pick) return; const a = Number(pa.value); mk.value = a > 0 ? Math.round((pick.k * a) / 100) : ''; root.querySelector('#pkk').textContent = mk.value === '' ? '먹은 양을 적어주세요' : Number(mk.value).toLocaleString() + ' kcal'; };
+      const recalc = () => { if (!pick) return; const a = Number(pa.value); mk.value = a > 0 ? Math.round((pick.k * a) / 100) : ''; root.querySelector('#pkk').textContent = mk.value === '' ? '먹은 양을 적어주세요' : Number(mk.value).toLocaleString() + ' kcal'; const nt = scaleNut(pick.nu, a); root.querySelector('#pkn2').innerHTML = nt ? nutLine(nt) : '<span>영양소 정보 없음</span>'; };
       const setMul = (m) => root.querySelectorAll('#pmul button').forEach((b) => b.setAttribute('aria-pressed', String(Number(b.dataset.m) === m)));
       const draw = () => {
         const q = fq.value.trim();
@@ -752,7 +790,7 @@ canvas#fx { position: fixed; inset: 0; pointer-events: none; z-index: 70; width:
         shown = searchFoods(q);
         fres.innerHTML = shown.length ? shown.map((f, i) => `<button type="button" class="res" data-i="${i}">
             <span class="rn">${esc(pretty(f.n))}${f.b ? `<em>${esc(f.b)}</em>` : ''}</span>
-            <span class="rk num">${Math.round((f.k * f.w) / 100).toLocaleString()} kcal<small>1인분 ${f.w}${f.u}</small></span>
+            <span class="rk num">${Math.round((f.k * f.w) / 100).toLocaleString()} kcal<small>1인분${f.e ? '(추정)' : ''} ${f.w}${f.u}</small></span>
           </button>`).join('') : `<p class="hint">"${esc(q)}" 검색 결과가 없어요. 짧게 써 보거나 아래에 칼로리를 직접 적어주세요.</p>`;
       };
       loadFoods().then(draw).catch(() => { fres.innerHTML = '<p class="hint">음식 데이터를 불러오지 못했어요. 칼로리를 직접 적어주세요.</p>'; });
@@ -785,6 +823,7 @@ canvas#fx { position: fixed; inset: 0; pointer-events: none; z-index: 70; width:
         if (mk.value === '') { root.querySelector('#manual').open = true; }
         if (!Number.isFinite(kcal) || kcal < 0 || mk.value === '') { root.querySelector('#ferr').textContent = '칼로리를 숫자로 적어주세요. 모르면 0도 괜찮아요.'; return; }
         const m = { id: uid(), slot, name, kcal };
+        if (pick) { const nt = scaleNut(pick.nu, Number(pa.value)); if (nt) m.nut = nt; }
         if (pick && Number(pa.value) > 0) { m.amt = Number(pa.value); m.unit = pick.u; }
         ensureDay(sel).meals.push(m);
         closeSheet(); commit(sel); toast(`${slot}에 ${kcal}kcal 기록했어요`);
@@ -930,6 +969,10 @@ canvas#fx { position: fixed; inset: 0; pointer-events: none; z-index: 70; width:
             <h4>날짜별 섭취 칼로리</h4>
             <p class="cap" id="cap">막대를 누르면 그날 칼로리가 보여요 · 빨간 막대는 목표 초과</p>
             <svg viewBox="0 0 ${W} ${H}" class="chart" role="img" aria-label="날짜별 섭취 칼로리 막대 그래프">${svg}</svg>
+          </section>
+          <section class="card">
+            <h4>하루 평균 영양소</h4>
+            ${logged.length ? nutCard(logged.flatMap((r) => r.d.meals), logged.length) : '<p class="cap">아직 식단 기록이 없어요.</p>'}
           </section>
           <section class="card">
             <h4>끼니별 평균 칼로리</h4>
