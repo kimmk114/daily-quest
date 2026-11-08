@@ -155,6 +155,8 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
 .food { display: flex; align-items: center; gap: 10px; padding: 10px 14px; border-top: 1px solid var(--line); }
 .food .fn { flex: 1; min-width: 0; overflow-wrap: anywhere; }
 .food .fk { color: var(--muted); font-size: 13px; }
+.add-row { width: 100%; padding: 14px; border-radius: 16px; border: 1.5px dashed color-mix(in srgb, var(--accent) 55%, var(--line)); color: var(--accent); font-weight: 600; font-size: 15px; display: flex; align-items: center; justify-content: center; gap: 6px; }
+.add-row:hover { background: color-mix(in srgb, var(--accent) 8%, transparent); }
 .slot-add { width: 100%; padding: 10px 14px; text-align: left; color: var(--accent); font-size: 13px; font-weight: 600; border-top: 1px solid var(--line); }
 
 /* FAB */
@@ -481,7 +483,8 @@ canvas#fx { position: fixed; inset: 0; pointer-events: none; z-index: 70; width:
             <button class="what" data-act="${canCheck ? 'toggleR' : ''}" data-id="${r.id}"><span class="em">${esc(r.emoji)}</span><span class="tx">${esc(r.text)}</span></button>
             <div class="side">${editRoutines ? `<button class="del" data-act="delR" data-id="${r.id}" aria-label="삭제">✕</button>` : `<button class="check" data-act="${canCheck ? 'toggleR' : ''}" data-id="${r.id}" aria-label="완료 표시">✓</button>`}</div>
           </div>`;
-        }).join('')}</div>` : `<div class="empty"><b>루틴이 비어 있어요</b>아래 + 버튼으로 매일 할 습관을 추가하세요.</div>`}
+        }).join('')}</div>` : `<div class="empty"><b>루틴이 비어 있어요</b>매일 할 습관을 추가해 보세요.</div>`}
+        ${ro ? '' : '<button class="add-row" data-act="addR">＋ 루틴 추가</button>'}
         ${isFuture ? '<div class="banner">루틴 체크는 그날 당일에 할 수 있어요.</div>' : ''}`;
     } else if (tab === 'todo') {
       p.innerHTML = `
@@ -491,7 +494,8 @@ canvas#fx { position: fixed; inset: 0; pointer-events: none; z-index: 70; width:
           <div class="row todo ${x.done ? 'done' : ''}">
             <button class="what" data-act="${ro ? '' : 'toggleT'}" data-id="${x.id}"><span class="tx">${esc(x.text)}</span></button>
             <div class="side">${ro ? '' : `<button class="del" data-act="delT" data-id="${x.id}" aria-label="삭제">✕</button>`}<button class="check" data-act="${ro ? '' : 'toggleT'}" data-id="${x.id}" aria-label="완료 표시">✓</button></div>
-          </div>`).join('')}</div>` : `<div class="empty"><b>할 일이 없어요</b>${ro ? '이날은 할 일이 없었어요.' : '+ 버튼으로 이날 할 일을 추가하세요. 할 일이 없으면 투두는 자동 통과예요.'}</div>`}`;
+          </div>`).join('')}</div>` : `<div class="empty"><b>할 일이 없어요</b>${ro ? '이날은 할 일이 없었어요.' : '할 일이 없으면 투두는 자동 통과예요.'}</div>`}
+        ${ro ? '' : '<button class="add-row" data-act="addT">＋ 할 일 추가</button>'}`;
     } else {
       const over = st.kcal > S.goalKcal;
       p.innerHTML = `
@@ -530,6 +534,8 @@ canvas#fx { position: fixed; inset: 0; pointer-events: none; z-index: 70; width:
     else if (act === 'delT') { const d = ensureDay(sel); d.todos = d.todos.filter((t) => t.id !== id); commit(sel); }
     else if (act === 'delM') { const d = ensureDay(sel); d.meals = d.meals.filter((m) => m.id !== id); commit(sel); }
     else if (act === 'addM') openMeal(a.dataset.slot);
+    else if (act === 'addR') openRoutine();
+    else if (act === 'addT') openTodo();
   });
   document.querySelectorAll('.tab').forEach((b) => b.addEventListener('click', () => { tab = b.dataset.tab; editRoutines = false; render(); }));
   $('#panel').addEventListener('click', (e) => {
