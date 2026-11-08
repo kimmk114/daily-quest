@@ -293,7 +293,7 @@ canvas#fx { position: fixed; inset: 0; pointer-events: none; z-index: 70; width:
 
   function defaultState() {
     return {
-      v: 1, points: 0, goalKcal: 1800, startDate: today(), updatedAt: 0,
+      v: 1, points: 0, goalKcal: 2500, goalV2: true, startDate: today(), updatedAt: 0,
       routines: [
         { id: uid(), emoji: '💧', text: '일어나서 물 한 잔', time: '아침' },
         { id: uid(), emoji: '🧘', text: '스트레칭 10분', time: '아침' },
@@ -307,6 +307,9 @@ canvas#fx { position: fixed; inset: 0; pointer-events: none; z-index: 70; width:
   let S;
   try { S = JSON.parse(localStorage.getItem(KEY)); } catch (e) { S = null; }
   if (!S || S.v !== 1) S = defaultState();
+  // 기존 기본값(1800)을 성인 남성 권장량(2500)으로 바꿈
+  function migrate(s) { if (!s.goalV2) { if (s.goalKcal === 1800) s.goalKcal = 2500; s.goalV2 = true; } return s; }
+  migrate(S);
 
   let sel = today();
   let tab = 'routine';
@@ -398,7 +401,7 @@ canvas#fx { position: fixed; inset: 0; pointer-events: none; z-index: 70; width:
       dbRef = ref;
       const remote = snap.exists ? snap.data() : null;
       if (remote && remote.v === 1 && (remote.updatedAt || 0) > (S.updatedAt || 0)) {
-        S = JSON.parse(JSON.stringify(remote));
+        S = migrate(JSON.parse(JSON.stringify(remote)));
         if (settle()) persist();
         try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) {}
         render();
@@ -651,8 +654,9 @@ canvas#fx { position: fixed; inset: 0; pointer-events: none; z-index: 70; width:
     openSheet(`
       <h3>하루 목표 칼로리</h3>
       <form id="f" class="sheet-in" style="gap:14px">
+        <div class="rules">성인 남성 하루 권장 칼로리는 약 <b>2,500kcal</b>예요 (19~29세 2,600 · 30~49세 2,500 · 50~64세 2,200 · 보건복지부 2020 한국인 영양소 섭취기준). 다이어트 중이면 여기서 300~500kcal 정도 빼서 정하는 경우가 많아요.</div>
         <div class="field"><label for="gk">kcal</label><input id="gk" type="number" inputmode="numeric" min="800" max="5000" value="${S.goalKcal}"></div>
-        <div class="chips">${[1400, 1600, 1800, 2000, 2200, 2500].map((k) => `<button type="button" class="chip" data-k="${k}">${k}</button>`).join('')}</div>
+        <div class="chips">${[2000, 2200, 2500, 2600, 2800, 3000].map((k) => `<button type="button" class="chip" data-k="${k}">${k}</button>`).join('')}</div>
         <div class="err" id="ferr"></div>
         <button class="primary">저장</button>
         <button type="button" class="ghost" data-dismiss>취소</button>
