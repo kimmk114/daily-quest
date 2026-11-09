@@ -55,6 +55,10 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
 .brand { font-family: var(--font-display); font-size: 24px; letter-spacing: -0.01em; }
 .brand small { display: block; font-family: var(--font-body); font-size: 12px; color: var(--muted); font-weight: 500; }
 .wallet { display: flex; gap: 6px; flex-wrap: wrap; justify-content: flex-end; }
+.brand { min-width: 0; white-space: nowrap; }
+.brand small { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+@media (max-width: 430px) { .wallet { gap: 4px; flex-wrap: nowrap; } .pill { padding: 7px 9px; font-size: 16px; } .brand { font-size: 22px; } }
+@media (max-width: 380px) { .pill { padding: 6px 7px; gap: 4px; } .brand { font-size: 20px; } }
 .pill {
   display: inline-flex; align-items: center; gap: 6px; padding: 8px 12px;
   border-radius: 999px; background: var(--surface); border: 1px solid var(--line);
@@ -111,7 +115,7 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
 .banner.lose { color: var(--danger); font-weight: 600; }
 
 /* tabs */
-.tabs { display: grid; grid-template-columns: repeat(3, 1fr); background: var(--surface); border-radius: 14px; padding: 4px; }
+.tabs { display: grid; grid-template-columns: repeat(4, 1fr); background: var(--surface); border-radius: 14px; padding: 4px; }
 .tab { padding: 10px 0; border-radius: 10px; font-family: var(--font-display); font-size: 17px; color: var(--muted); }
 .tab[aria-selected="true"] { background: var(--surface-2); color: var(--fg); }
 .tab .cnt { font-family: var(--font-body); font-size: 12px; margin-left: 4px; color: var(--muted); }
@@ -163,6 +167,29 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
 .add-row { width: 100%; padding: 14px; border-radius: 16px; border: 1.5px dashed color-mix(in srgb, var(--accent) 55%, var(--line)); color: var(--accent); font-weight: 600; font-size: 15px; display: flex; align-items: center; justify-content: center; gap: 6px; }
 .add-row:hover { background: color-mix(in srgb, var(--accent) 8%, transparent); }
 .slot-add { width: 100%; padding: 10px 14px; text-align: left; color: var(--accent); font-size: 13px; font-weight: 600; border-top: 1px solid var(--line); }
+.quote { margin: -4px 0 0; padding: 12px 14px; border-radius: 14px; background: var(--surface); font-size: 14px; line-height: 1.55; color: var(--fg); }
+.quote .qm { font-family: Georgia, serif; color: var(--accent); font-size: 26px; font-weight: 700; line-height: 0; margin-right: 4px; vertical-align: -9px; }
+.quote em { display: block; font-style: normal; font-size: 12px; color: var(--muted); margin-top: 4px; text-align: right; }
+.mealnote { display: flex; align-items: center; gap: 10px; padding: 12px 14px; border-radius: 16px; border: 1px solid color-mix(in srgb, var(--accent) 40%, var(--line)); background: var(--surface); }
+.mealnote p { flex: 1; margin: 0; font-size: 14px; line-height: 1.5; }
+.mealnote p small { color: var(--muted); font-size: 11px; }
+.mealnote .link { flex: none; }
+.ai-btn { width: 100%; padding: 11px 14px; border-radius: 12px; border: 1px dashed var(--accent); color: var(--accent); font-weight: 600; font-size: 14px; }
+.ai-btn:disabled { opacity: .6; }
+.aibox { display: flex; flex-direction: column; gap: 6px; }
+.cap { font-size: 12px; color: var(--muted); margin: 0; }
+.wtext { width: 100%; box-sizing: border-box; padding: 12px 14px; border-radius: 12px; border: 1px solid var(--line); background: var(--bg); color: var(--fg); font: inherit; font-size: 16px; line-height: 1.5; resize: vertical; }
+.wacts { display: flex; gap: 8px; align-items: stretch; }
+.wreport { white-space: pre-wrap; font-size: 14px; line-height: 1.65; }
+.frow3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 8px; }
+.savemine { display: flex; align-items: center; gap: 8px; margin-top: 10px; font-size: 13px; color: var(--muted); }
+.mydel { color: var(--danger, #e5534b); text-decoration: underline; cursor: pointer; }
+.slot-acts { display: flex; border-top: 1px solid var(--line); }
+.slot-acts .slot-add { flex: 1; border-top: 0; }
+.fast-btn { flex: none; margin: 6px 8px 6px 0; padding: 4px 12px; border: 1px solid var(--line); border-radius: 999px; font-size: 12px; font-weight: 600; color: var(--muted); }
+.fast-btn:hover { color: var(--accent); border-color: var(--accent); }
+.fast-on { display: flex; justify-content: space-between; align-items: center; padding: 10px 14px; font-size: 13px; color: var(--accent); border-top: 1px solid var(--line); }
+.slot.fasted { border-color: color-mix(in srgb, var(--accent) 45%, var(--line)); }
 
 /* FAB */
 .fab {
@@ -299,11 +326,13 @@ canvas#fx { position: fixed; inset: 0; pointer-events: none; z-index: 70; width:
   <header class="top">
     <div class="brand">하루 퀘스트<small id="greet">오늘도 한 칸씩</small></div>
     <div class="wallet">
+      <button class="pill" id="setBtn" aria-label="설정">⚙️</button>
       <button class="pill" id="statsBtn" aria-label="통계">📊</button>
       <button class="pill" id="streakBtn" aria-label="연속 클리어">🔥 <span class="num" id="streak">0</span></button>
       <button class="pill points" id="pointsBtn" aria-label="포인트 내역"><span class="coin">P</span><span class="num" id="points">0</span></button>
     </div>
   </header>
+  <p class="quote" id="quote"></p>
 
   <section aria-label="캘린더">
     <div class="cal-head">
@@ -323,6 +352,7 @@ canvas#fx { position: fixed; inset: 0; pointer-events: none; z-index: 70; width:
     <button class="tab" role="tab" data-tab="routine" id="tab-routine">루틴<span class="cnt" id="c-routine"></span></button>
     <button class="tab" role="tab" data-tab="todo" id="tab-todo">투두<span class="cnt" id="c-todo"></span></button>
     <button class="tab" role="tab" data-tab="meal" id="tab-meal">식단<span class="cnt" id="c-meal"></span></button>
+    <button class="tab" role="tab" data-tab="workout" id="tab-workout">운동<span class="cnt" id="c-workout"></span></button>
   </div>
 
   <section class="panel" id="panel"></section>
@@ -348,6 +378,53 @@ canvas#fx { position: fixed; inset: 0; pointer-events: none; z-index: 70; width:
     ['김밥 한 줄', 420], ['샌드위치', 380], ['아메리카노', 10], ['라떼', 190], ['우유 한 잔', 130], ['프로틴 쉐이크', 140]
   ];
   const WD = ['일','월','화','수','목','금','토'];
+  const QUOTES = [
+    ['천 리 길도 한 걸음부터.', '노자'],
+    ['오늘 할 수 있는 일을 내일로 미루지 마라.', '벤저민 프랭클린'],
+    ['우리가 반복하는 것이 곧 우리 자신이다. 탁월함은 행동이 아니라 습관이다.', '윌 듀런트'],
+    ['시작이 반이다.', '아리스토텔레스'],
+    ['넘어지는 것은 실패가 아니다. 넘어진 자리에 머무는 것이 실패다.', '속담'],
+    ['작은 일도 무시하지 않고 최선을 다하면 정성스럽게 된다.', '중용'],
+    ['성공은 매일 반복한 작은 노력들의 합이다.', '로버트 콜리어'],
+    ['할 수 있다고 믿든 할 수 없다고 믿든, 당신이 옳다.', '헨리 포드'],
+    ['멈추지만 않는다면 얼마나 천천히 가는지는 문제가 되지 않는다.', '공자'],
+    ['가장 큰 영광은 한 번도 넘어지지 않는 것이 아니라 넘어질 때마다 일어서는 것이다.', '공자'],
+    ['내일은 오늘 무엇을 하느냐에 달려 있다.', '마하트마 간디'],
+    ['어제보다 나은 오늘이면 충분하다.', '하루 퀘스트'],
+    ['완벽보다 꾸준함이 이긴다.', '하루 퀘스트'],
+    ['몸은 당신이 하는 말을 듣는다. 오늘도 좋은 말을 들려주자.', '하루 퀘스트'],
+    ['위대한 일은 충동이 아니라 작은 일들이 모여 이루어진다.', '빈센트 반 고흐'],
+    ['행동이 항상 행복을 가져오지는 않지만, 행동 없이는 행복도 없다.', '벤저민 디즈레일리'],
+    ['미래를 예측하는 가장 좋은 방법은 미래를 만드는 것이다.', '피터 드러커'],
+    ['포기하고 싶을 때가 바로 거의 다 왔을 때다.', '속담'],
+    ['물방울이 바위를 뚫는 것은 힘이 아니라 꾸준함 때문이다.', '오비디우스'],
+    ['자신을 이기는 것이 가장 큰 승리다.', '플라톤'],
+    ['지금 고통스러운 것은 언젠가 힘이 된다.', '오비디우스'],
+    ['하루하루를 마지막 날처럼 살되, 영원히 살 것처럼 배워라.', '마하트마 간디'],
+    ['산을 옮기는 사람은 작은 돌을 옮기는 것부터 시작한다.', '공자'],
+    ['인생은 자전거를 타는 것과 같다. 균형을 잡으려면 계속 움직여야 한다.', '알베르트 아인슈타인'],
+    ['동기는 시작하게 하고, 습관은 계속하게 한다.', '짐 론'],
+    ['오늘의 나를 만든 것은 어제의 나고, 내일의 나를 만드는 것은 오늘의 나다.', '하루 퀘스트'],
+    ['실패는 성공으로 가는 길에 있는 이정표다.', 'C.S. 루이스'],
+    ['건강한 몸에 건강한 정신이 깃든다.', '유베날리스'],
+    ['느리더라도 꾸준하면 경주에서 이긴다.', '이솝'],
+    ['어려움 속에 기회가 있다.', '알베르트 아인슈타인'],
+    ['쉬는 것도 훈련이다. 오늘 쉬었다면 내일 더 잘하면 된다.', '하루 퀘스트'],
+    ['당신이 할 수 있는 일, 할 수 있다고 꿈꾸는 일이 있다면 지금 시작하라.', '괴테'],
+    ['삶이 있는 한 희망은 있다.', '키케로'],
+    ['계획 없는 목표는 소원에 불과하다.', '생텍쥐페리'],
+    ['한 번에 하나씩, 오늘 할 퀘스트 하나부터.', '하루 퀘스트'],
+    ['나는 천천히 가는 사람이지만 결코 뒤로 가지는 않는다.', '에이브러햄 링컨'],
+    ['꿈을 이루고 싶다면 먼저 꿈에서 깨어나라.', '속담'],
+    ['오늘 걷지 않으면 내일은 뛰어야 한다.', '속담'],
+    ['의지가 있는 곳에 길이 있다.', '속담'],
+    ['스스로를 믿어라. 당신은 생각보다 강하다.', '하루 퀘스트']
+  ];
+  function dailyQuote(date) {
+    const d = parse(date);
+    const n = Math.floor(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()) / 86400000);
+    return QUOTES[((n * 7) % QUOTES.length + QUOTES.length) % QUOTES.length];
+  }
 
   const $ = (s) => document.querySelector(s);
   const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]));
@@ -374,14 +451,14 @@ canvas#fx { position: fixed; inset: 0; pointer-events: none; z-index: 70; width:
   try { S = JSON.parse(localStorage.getItem(KEY)); } catch (e) { S = null; }
   if (!S || S.v !== 1) S = defaultState();
   // 기존 기본값(1800)을 성인 남성 권장량(2500)으로 바꿈
-  function migrate(s) { if (!s.goalV2) { if (s.goalKcal === 1800) s.goalKcal = 2500; s.goalV2 = true; } return s; }
+  function migrate(s) { if (!s.goalV2) { if (s.goalKcal === 1800) s.goalKcal = 2500; s.goalV2 = true; } s.myFoods ||= []; return s; }
   migrate(S);
 
   let sel = today();
   let tab = 'routine';
   let editRoutines = false;
 
-  const emptyDay = () => ({ todos: [], rdone: {}, meals: [], result: null, delta: 0 });
+  const emptyDay = () => ({ todos: [], rdone: {}, meals: [], skip: {}, result: null, delta: 0 });
   const getDay = (date) => S.days[date] || emptyDay();
   const ensureDay = (date) => (S.days[date] ||= emptyDay());
 
@@ -392,7 +469,7 @@ canvas#fx { position: fixed; inset: 0; pointer-events: none; z-index: 70; width:
     const tTotal = d.todos.length;
     const tDone = d.todos.filter((t) => t.done).length;
     const kcal = d.meals.reduce((a, m) => a + (Number(m.kcal) || 0), 0);
-    const slotsDone = SLOTS.filter((s) => d.meals.some((m) => m.slot === s)).length;
+    const slotsDone = SLOTS.filter((s) => (d.skip && d.skip[s]) || d.meals.some((m) => m.slot === s)).length;
     const rOK = rDone === rTotal;
     const tOK = tDone === tTotal;
     const mOK = slotsDone === SLOTS.length && kcal <= S.goalKcal;
@@ -429,6 +506,21 @@ canvas#fx { position: fixed; inset: 0; pointer-events: none; z-index: 70; width:
     }
   }
 
+  // 지난 날 식단을 고치면 그날 결과를 다시 판정
+  function resettle(date) {
+    if (date >= today()) return;
+    const d = S.days[date];
+    if (!d || !d.result) return;
+    const ok = status(date).ok;
+    if (ok && d.result === 'fail') {
+      applyDelta(-d.delta); d.result = 'clear'; d.delta = applyDelta(REWARD);
+      celebrate(); toast(`지난 퀘스트도 클리어! 실패 포인트를 돌려받고 +${REWARD}P`); bump();
+    } else if (!ok && d.result === 'clear') {
+      applyDelta(-d.delta); d.result = 'fail'; d.delta = applyDelta(-PENALTY);
+      toast(`클리어 조건이 깨져서 그날 결과가 실패로 바뀌었어요 (−${PENALTY}P)`); bump();
+    }
+  }
+
   function streak() {
     let n = 0, date = today();
     if (getDay(date).result !== 'clear') date = addDays(date, -1);
@@ -450,7 +542,7 @@ canvas#fx { position: fixed; inset: 0; pointer-events: none; z-index: 70; width:
         .catch(() => setSync('계정 저장에 실패했어요. 이 기기에는 저장돼 있어요.'));
     }, 700);
   }
-  function commit(date) { if (date) checkToday(date); persist(); render(); }
+  function commit(date) { if (date) { checkToday(date); resettle(date); } persist(); render(); }
 
   async function connect() {
     let tries = 0;
@@ -492,6 +584,7 @@ canvas#fx { position: fixed; inset: 0; pointer-events: none; z-index: 70; width:
     $('#points').textContent = S.points.toLocaleString();
     $('#streak').textContent = streak();
     const h = new Date().getHours();
+    { const [qt, qa] = dailyQuote(t); $('#quote').innerHTML = `<span class="qm">“</span>${esc(qt)}<em>— ${esc(qa)}</em>`; }
     $('#greet').textContent = h < 11 ? '좋은 아침, 오늘도 한 칸씩' : h < 18 ? '오후도 퀘스트 진행 중' : '오늘 마무리할 시간';
 
     // week strip
@@ -529,6 +622,7 @@ canvas#fx { position: fixed; inset: 0; pointer-events: none; z-index: 70; width:
     $('#c-routine').textContent = `${st.rDone}/${st.rTotal}`;
     $('#c-todo').textContent = `${st.tDone}/${st.tTotal}`;
     $('#c-meal').textContent = `${st.kcal.toLocaleString()}`;
+    $('#c-workout').textContent = d.workout && d.workout.text ? '✓' : '';
 
     const ro = isPast; // past days are locked
     const p = $('#panel');
@@ -560,29 +654,53 @@ canvas#fx { position: fixed; inset: 0; pointer-events: none; z-index: 70; width:
             <div class="side">${ro ? '' : `<button class="del" data-act="delT" data-id="${x.id}" aria-label="삭제">✕</button>`}<button class="check" data-act="${ro ? '' : 'toggleT'}" data-id="${x.id}" aria-label="완료 표시">✓</button></div>
           </div>`).join('')}</div>` : `<div class="empty"><b>할 일이 없어요</b>${ro ? '이날은 할 일이 없었어요.' : '할 일이 없으면 투두는 자동 통과예요.'}</div>`}
         ${ro ? '' : '<button class="add-row" data-act="addT">＋ 할 일 추가</button>'}`;
+    } else if (tab === 'workout') {
+      const w = d.workout || null;
+      const recent = workoutHistory(sel, 7);
+      p.innerHTML = `
+        <div class="panel-head"><span>${sel === t ? '오늘' : `${sd.getMonth() + 1}/${sd.getDate()}`} 운동 리포트</span>${recent.length ? `<span class="cap">최근 7일 ${recent.length}회 운동</span>` : ''}</div>
+        ${isFuture ? '<div class="banner">운동 기록은 그날이나 지난 날에 쓸 수 있어요.</div>' : `
+        <div class="kcal">
+          <label for="wtext" class="cap">운동 끝나고 오늘 운동이 어땠는지 적어주세요 · 종류, 시간, 무게/횟수, 컨디션 등</label>
+          <textarea id="wtext" class="wtext" rows="5" maxlength="2000" placeholder="예: 하체 50분. 스쿼트 60kg 5x5, 런지 3세트. 마지막 세트에 무릎이 좀 시큰했고 숨이 많이 찼음. 어제 5시간밖에 못 잠.">${esc(w ? w.text : '')}</textarea>
+          <div class="wacts">
+            <button class="ghost" id="wsave" style="width:auto;padding:10px 16px">저장만</button>
+            ${aiReady() ? '<button class="primary" id="wai" style="flex:1;padding:10px">🤖 AI 분석 받기</button>' : ''}
+          </div>
+          ${aiReady() ? '' : `<p class="cap">${aiHint()} 기록은 지금도 저장돼요.</p>`}
+        </div>
+        <div class="kcal" id="wrep" ${w && w.report ? '' : 'hidden'}>
+          <div class="kcal-top"><b style="font-family:var(--font-display);font-weight:400;font-size:17px">🤖 AI 운동 분석</b>${w && w.at ? `<span class="cap">${new Date(w.at).toLocaleString('ko-KR', { month: 'numeric', day: 'numeric', hour: 'numeric', minute: '2-digit' })}</span>` : ''}</div>
+          <div class="wreport" id="wreptext">${esc(w && w.report ? w.report : '')}</div>
+          <p class="cap" id="wrepnote"></p>
+        </div>`}`;
     } else {
       const over = st.kcal > S.goalKcal;
+      const skip = d.skip || {};
       p.innerHTML = `
-        ${lockNote}
+        ${ro ? `<div class="banner">지난 날 식단도 기록할 수 있어요. 기록하면 그날 퀘스트 결과를 다시 판정해요.</div>` : ''}
         <div class="kcal">
           <div class="kcal-top"><div class="big num">${st.kcal.toLocaleString()}<small>/ ${S.goalKcal.toLocaleString()} kcal</small></div>${ro ? '' : '<button class="link" id="goalBtn">목표 바꾸기</button>'}</div>
           <div class="bar ${over ? 'over' : ''}"><span style="width:${kPct}%"></span></div>
           <div class="kcal-note ${over ? 'over' : ''}">${over ? `목표보다 ${(st.kcal - S.goalKcal).toLocaleString()}kcal 더 먹었어요 · 식단 퀘스트 실패 조건이에요` : `${(S.goalKcal - st.kcal).toLocaleString()}kcal 남았어요 · 아침·점심·저녁을 기록하고 목표 안으로 먹으면 식단 퀘스트 완료`}</div>
         </div>
+        ${mealNoteHTML(d)}
         ${d.meals.length ? `<div class="kcal"><div class="kcal-top"><b style="font-family:var(--font-display);font-weight:400;font-size:17px">오늘 먹은 영양소</b></div>${nutCard(d.meals, 1)}</div>` : ''}
         ${MEAL_SLOTS.map((slot) => {
           const items = d.meals.filter((m) => m.slot === slot);
           const sum = items.reduce((a, m) => a + (Number(m.kcal) || 0), 0);
           const req = slot !== '간식';
-          return `<div class="slot">
-            <div class="slot-h"><span class="nm">${slot}${req ? (items.length ? '<span class="ok">✓</span>' : '<span class="req">필수</span>') : '<span class="req">선택</span>'}</span><span class="sum num">${sum.toLocaleString()} kcal</span></div>
-            ${items.map((m) => `<div class="food"><span class="fn">${esc(m.name)}${m.nut ? `<small class="nutmini num">${['c','p','f'].filter((k) => m.nut[k] != null).map((k) => ({ c: '탄', p: '단', f: '지' })[k] + ' ' + r1(m.nut[k]) + 'g').join(' · ')}</small>` : ''}</span><span class="fk num">${m.amt ? `${m.amt}${esc(m.unit || 'g')} · ` : ''}${Number(m.kcal).toLocaleString()} kcal</span>${ro ? '' : `<button class="del" data-act="delM" data-id="${m.id}" aria-label="삭제">✕</button>`}</div>`).join('')}
-            ${ro ? '' : `<button class="slot-add" data-act="addM" data-slot="${slot}">+ ${slot} 기록하기</button>`}
+          const fasted = req && !!skip[slot] && !items.length;
+          return `<div class="slot ${fasted ? 'fasted' : ''}">
+            <div class="slot-h"><span class="nm">${slot}${req ? (items.length || fasted ? '<span class="ok">✓</span>' : '<span class="req">필수</span>') : '<span class="req">선택</span>'}</span><span class="sum num">${fasted ? '단식' : sum.toLocaleString() + ' kcal'}</span></div>
+            ${fasted ? `<div class="fast-on"><span>🍃 이 끼니는 걸렀어요</span><button class="link" data-act="unskipM" data-slot="${slot}">취소</button></div>` : ''}
+            ${items.map((m) => `<div class="food"><span class="fn">${esc(m.name)}${m.nut ? `<small class="nutmini num">${['c','p','f'].filter((k) => m.nut[k] != null).map((k) => ({ c: '탄', p: '단', f: '지' })[k] + ' ' + r1(m.nut[k]) + 'g').join(' · ')}</small>` : ''}</span><span class="fk num">${m.amt ? `${m.amt}${esc(m.unit || 'g')} · ` : ''}${Number(m.kcal).toLocaleString()} kcal</span>${`<button class="del" data-act="delM" data-id="${m.id}" aria-label="삭제">✕</button>`}</div>`).join('')}
+            ${fasted ? '' : `<div class="slot-acts"><button class="slot-add" data-act="addM" data-slot="${slot}">+ ${slot} 기록하기</button>${req && !items.length && !isFuture ? `<button class="fast-btn" data-act="skipM" data-slot="${slot}">🍃 단식했어요</button>` : ''}</div>`}
           </div>`;
         }).join('')}`;
     }
 
-    $('#fab').hidden = ro || (tab === 'meal');
+    $('#fab').hidden = ro || tab === 'meal' || tab === 'workout';
   }
 
   /* ---------- interactions ---------- */
@@ -599,11 +717,88 @@ canvas#fx { position: fixed; inset: 0; pointer-events: none; z-index: 70; width:
     else if (act === 'delT') { const d = ensureDay(sel); d.todos = d.todos.filter((t) => t.id !== id); commit(sel); }
     else if (act === 'delM') { const d = ensureDay(sel); d.meals = d.meals.filter((m) => m.id !== id); commit(sel); }
     else if (act === 'addM') openMeal(a.dataset.slot);
+    else if (act === 'skipM') { const d = ensureDay(sel); (d.skip ||= {})[a.dataset.slot] = true; commit(sel); toast(`${a.dataset.slot}은 단식으로 체크했어요`); }
+    else if (act === 'unskipM') { const d = ensureDay(sel); if (d.skip) delete d.skip[a.dataset.slot]; commit(sel); }
     else if (act === 'addR') openRoutine();
     else if (act === 'addT') openTodo();
   });
   document.querySelectorAll('.tab').forEach((b) => b.addEventListener('click', () => { tab = b.dataset.tab; editRoutines = false; render(); }));
+  // 식단 한 줄 분석: 식단이 바뀌면 다시 받을 수 있게 서명(sig)으로 비교
+  const mealSig = (d) => d.meals.map((m) => m.id).join(',') + '|' + SLOTS.filter((x) => d.skip && d.skip[x]).join(',');
+  let mealBusy = false;
+  function mealNoteHTML(d) {
+    if (!d.meals.length) return '';
+    const n = d.mealNote, fresh = n && n.sig === mealSig(d);
+    if (!aiReady()) return n ? `<div class="mealnote"><span>🤖</span><p>${esc(n.text)}</p></div>` : `<div class="mealnote"><span>🤖</span><p class="cap" style="min-height:0">${aiHint()}</p></div>`;
+    return `<div class="mealnote"><span>🤖</span><p id="mnote">${n ? esc(n.text) : '오늘 식단을 AI가 한 줄로 평가해줘요.'}${n && !fresh ? ' <small>(식단이 바뀌었어요)</small>' : ''}</p>${fresh ? '' : `<button class="link" id="mnoteBtn">${n ? '다시 분석' : '한 줄 분석'}</button>`}</div>`;
+  }
+  async function analyzeMeals() {
+    if (mealBusy || !aiReady()) return;
+    const date = sel, d = ensureDay(date), st = status(date);
+    mealBusy = true;
+    const btn = $('#mnoteBtn'); if (btn) btn.hidden = true;
+    if ($('#mnote')) $('#mnote').textContent = '분석하는 중…';
+    const lines = MEAL_SLOTS.map((sl) => {
+      if (d.skip && d.skip[sl]) return `${sl}: 단식(걸렀음)`;
+      const it = d.meals.filter((m) => m.slot === sl);
+      return it.length ? `${sl}: ` + it.map((m) => `${m.name} ${m.kcal}kcal${m.nut ? ` (탄${m.nut.c ?? '?'} 단${m.nut.p ?? '?'} 지${m.nut.f ?? '?'}g)` : ''}`).join(', ') : `${sl}: 기록 없음`;
+    }).join('\n');
+    const { o } = sumNut(d.meals);
+    try {
+      const { text } = await AI(`너는 다정한 영양사야. 아래 하루 식단을 보고 한국어 한 문장(50자 안팎, 이모지 1개 가능)으로 핵심 평가와 다음 끼니 팁을 줘. 문장 하나만 답해.
+목표 칼로리: ${S.goalKcal}kcal, 먹은 칼로리: ${st.kcal}kcal
+영양소 합계(알려진 것만): 탄수화물 ${Math.round(o.c)}g, 단백질 ${Math.round(o.p)}g, 지방 ${Math.round(o.f)}g, 나트륨 ${Math.round(o.na)}mg
+${lines}`, { modelTier: 'quick' });
+      const dd = ensureDay(date); dd.mealNote = { text: text.trim().split('\n')[0].slice(0, 160), sig: mealSig(dd) };
+      persist();
+    } catch (e) { const m = aiErr(e); if (m) toast(m); }
+    mealBusy = false;
+    render();
+  }
+  function workoutHistory(date, n) {
+    const out = [];
+    for (let i = 1; i <= n; i++) { const dt = addDays(date, -i); const w = S.days[dt] && S.days[dt].workout; if (w && w.text) out.push({ date: dt, text: w.text }); }
+    return out;
+  }
+  async function analyzeWorkout() {
+    const ta = $('#wtext'); if (!ta || !aiReady()) return;
+    const text = ta.value.trim();
+    if (!text) { toast('먼저 오늘 운동을 적어주세요'); return; }
+    const date = sel;
+    const day = ensureDay(date); day.workout = { ...(day.workout || {}), text }; persist();
+    $('#wrep').hidden = false; $('#wreptext').textContent = '운동 기록을 읽고 분석하는 중…'; $('#wrepnote').textContent = ''; $('#wai').disabled = true;
+    const st = status(date);
+    const hist = workoutHistory(date, 7).map((h) => `- ${h.date}: ${h.text.slice(0, 300)}`).join('\n') || '(최근 7일 기록 없음)';
+    const prompt = `너는 친절하지만 솔직한 퍼스널 트레이너야. 사용자가 운동 후 쓴 기록을 보고 한국어로 운동 리포트를 써줘.
+날짜: ${date}
+오늘 운동 기록:
+"""${text}"""
+최근 7일 운동 기록:
+${hist}
+오늘 먹은 칼로리: ${st.kcal}kcal (목표 ${S.goalKcal}kcal)
+
+형식: 마크다운 기호(#, *, -) 없이, 아래 5개 제목을 이모지와 함께 쓰고 각 1~3줄, 전체 15줄 이내.
+💪 오늘 운동 요약 — 종류·볼륨·강도, 추정 소모 칼로리 범위
+👍 잘한 점
+⚠️ 주의할 점 — 통증·수면·과훈련 신호. 통증이 심하면 쉬거나 전문가 상담 권유
+📈 다음 운동 제안 — 최근 흐름을 보고 구체적으로 (부위, 세트/횟수/무게)
+🍽️ 회복 팁 — 식사·수면`;
+    try {
+      const { text: rep, truncated } = await AI(prompt, { cache: false, onText: ({ text: t }) => { if (sel === date && $('#wreptext')) $('#wreptext').textContent = t; } });
+      const dd = ensureDay(date); dd.workout = { text, report: rep, at: Date.now() };
+      persist();
+      if (sel === date && tab === 'workout') { render(); if (truncated) $('#wrepnote').textContent = '분석이 길어서 중간에 끊겼어요.'; }
+      toast('운동 분석을 저장했어요');
+    } catch (e) {
+      const m = aiErr(e);
+      if (sel === date && $('#wreptext')) { $('#wreptext').textContent = e.text || ''; $('#wrepnote').textContent = m; if ($('#wai')) $('#wai').disabled = false; }
+      if (aiOff) render();
+    }
+  }
   $('#panel').addEventListener('click', (e) => {
+    if (e.target.id === 'mnoteBtn') analyzeMeals();
+    if (e.target.id === 'wsave') { const v = ($('#wtext').value || '').trim(); const d = ensureDay(sel); if (v) d.workout = { ...(d.workout || {}), text: v }; else delete d.workout; persist(); render(); toast(v ? '운동 기록을 저장했어요' : '운동 기록을 지웠어요'); }
+    if (e.target.id === 'wai') analyzeWorkout();
     if (e.target.id === 'editR') { editRoutines = !editRoutines; render(); }
     if (e.target.id === 'goalBtn') openGoal();
   });
@@ -614,6 +809,7 @@ canvas#fx { position: fixed; inset: 0; pointer-events: none; z-index: 70; width:
   $('#pointsBtn').onclick = openHistory;
   $('#streakBtn').onclick = openHistory;
   $('#statsBtn').onclick = openStats;
+  $('#setBtn').onclick = openSettings;
   $('#fab').onclick = () => (tab === 'routine' ? openRoutine() : openTodo());
 
   /* ---------- sheets ---------- */
@@ -690,6 +886,69 @@ canvas#fx { position: fixed; inset: 0; pointer-events: none; z-index: 70; width:
 
   /* 식약처 음식 영양성분 DB (foods.json) */
   let FOODS = null, foodsLoading = null;
+  /* ---------- AI ----------
+     claude.ai 안에서 열면 Claude, 아니면 설정에 넣은 Gemini 키로 동작.
+     키는 이 기기 localStorage 에만 저장하고 계정 동기화(S)에는 넣지 않음. */
+  const AIKEY = 'daily-quest-ai';
+  const GEMINI_MODELS = ['gemini-flash-latest', 'gemini-2.5-flash'];
+  let CLAUDE_AI = null, aiOff = false;
+  const geminiKey = () => { try { return localStorage.getItem(AIKEY) || ''; } catch (e) { return ''; } };
+  function geminiAI() {
+    const key = geminiKey();
+    if (!key) return null;
+    async function call(input, json) {
+      const body = JSON.stringify({ contents: [{ role: 'user', parts: [{ text: input }] }], generationConfig: json ? { responseMimeType: 'application/json' } : {} });
+      let last = null;
+      for (const model of GEMINI_MODELS) {
+        let r;
+        try {
+          r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`, { method: 'POST', headers: { 'content-type': 'application/json', 'x-goog-api-key': key }, body });
+        } catch (e) { throw { code: 'network' }; }
+        if (r.status === 404) { last = { code: 'upstream_error' }; continue; } // 모델 이름이 바뀐 경우 다음 후보로
+        const j = await r.json().catch(() => ({}));
+        if (!r.ok) {
+          const msg = JSON.stringify(j);
+          if (/API_KEY_INVALID|API key not valid|PERMISSION_DENIED/i.test(msg) || r.status === 401 || r.status === 403) throw { code: 'bad_key' };
+          if (r.status === 429) throw { code: 'rate_limited' };
+          throw { code: 'upstream_error' };
+        }
+        const c = j.candidates && j.candidates[0];
+        const text = c && c.content && c.content.parts ? c.content.parts.map((p) => p.text || '').join('').trim() : '';
+        if (!text) throw { code: c && c.finishReason === 'SAFETY' ? 'refused' : 'empty_completion' };
+        return { text, truncated: !!(c && c.finishReason === 'MAX_TOKENS') };
+      }
+      throw last || { code: 'upstream_error' };
+    }
+    const fn = async (input, opts = {}) => { const r = await call(input, false); if (opts.onText) opts.onText({ text: r.text, delta: r.text }); return r; };
+    fn.json = async (input) => {
+      const { text } = await call(input, true);
+      try { return JSON.parse(text); } catch (e) {
+        const m = text.match(/[\[{][\s\S]*[\]}]/); if (m) { try { return JSON.parse(m[0]); } catch (e2) {} }
+        throw { code: 'invalid_json' };
+      }
+    };
+    return fn;
+  }
+  let AI = geminiAI();
+  (async () => {
+    for (let i = 0; i < 15 && !(window.claude && window.claude.use); i++) await new Promise((r) => setTimeout(r, 200));
+    if (!(window.claude && window.claude.use)) return;
+    try { CLAUDE_AI = await claude.use('sample'); } catch (e) { CLAUDE_AI = null; }
+    if (CLAUDE_AI) { AI = CLAUDE_AI; render(); }
+  })();
+  const aiReady = () => !!AI && !aiOff;
+  const aiHint = () => (aiOff ? 'AI 사용이 허용되지 않았어요.' : '⚙️ 설정에서 Gemini 키를 넣으면 AI를 쓸 수 있어요 (무료).');
+  function aiErr(e) {
+    const c = e && e.code;
+    if (c === 'bad_key') return 'Gemini 키가 올바르지 않아요. ⚙️ 설정에서 키를 다시 확인해 주세요.';
+    if (c === 'network') return '인터넷 연결을 확인해 주세요.';
+    if (['not_granted', 'sampling_disabled', 'not_declared', 'capability_disabled', 'capability_removed'].includes(c)) { aiOff = true; return 'AI 사용이 허용되지 않았어요.'; }
+    if (c === 'rate_limited') return 'AI 요청이 너무 많아요. 잠시 뒤에 다시 눌러주세요.';
+    if (c === 'session_expired') return '다시 로그인해 주세요.';
+    if (c === 'refused') return 'AI가 이 내용에는 답하지 않았어요. 다르게 적어 보세요.';
+    if (c === 'cancelled') return '';
+    return 'AI 응답을 받지 못했어요. 다시 눌러주세요.';
+  }
   const norm = (s) => s.toLowerCase().replace(/[\s_()\[\]·,.-]/g, '');
   const pretty = (n) => n.replace(/_/g, ' · ');
   function loadFoods() {
@@ -727,11 +986,16 @@ canvas#fx { position: fixed; inset: 0; pointer-events: none; z-index: 70; width:
     </div>`;
   }
 
+  // 내가 등록한 음식 → 검색 결과 형식으로 (1인분 기준)
+  const mineItem = (m) => ({ n: m.n, b: '내 음식', k: m.kcal * 100, w: 1, u: '인분', e: false, mine: m.id,
+    nu: m.nut ? NUTS.map(([k]) => (m.nut[k] != null ? m.nut[k] * 100 : -1)) : null, key: norm(m.n) });
   function searchFoods(q) {
     const nq = norm(q);
-    if (!FOODS || !nq) return [];
+    if (!nq) return [];
+    const mine = (S.myFoods || []).filter((m) => norm(m.n).includes(nq) || q.split(/\s+/).map(norm).filter(Boolean).every((w) => norm(m.n).includes(w))).map(mineItem);
+    if (!FOODS) return mine;
     // 띄어쓰기로 나눈 단어가 모두 들어 있으면 찾기 (예: "맥도날드 빅맥", "CU 삼각김밥")
-    const words = q.split(/s+/).map(norm).filter(Boolean);
+    const words = q.split(/\s+/).map(norm).filter(Boolean);
     const out = [];
     for (const f of FOODS.items) {
       const nn = norm(f.n);
@@ -745,7 +1009,7 @@ canvas#fx { position: fixed; inset: 0; pointer-events: none; z-index: 70; width:
       out.push([s + (f.b ? 0.5 : 0), f.n.length, f]);
     }
     out.sort((a, b) => a[0] - b[0] || a[1] - b[1]);
-    return out.slice(0, 40).map((x) => x[2]);
+    return [...mine, ...out.slice(0, 40).map((x) => x[2])];
   }
 
   function openMeal(slot) {
@@ -758,6 +1022,7 @@ canvas#fx { position: fixed; inset: 0; pointer-events: none; z-index: 70; width:
           <input id="fq" type="search" placeholder="예: 김치찌개, 빅맥, 맥도날드 감자튀김" autocomplete="off" enterkeyhint="search">
         </div>
         <div class="results" id="fres"><p class="hint" id="fhint">음식 이름을 입력하면 칼로리를 자동으로 찾아줘요.</p></div>
+        <div class="aibox" id="aibox" hidden><button type="button" class="ai-btn" id="aiAsk">🤖 AI에게 칼로리 물어보기</button><p class="cap" id="aiMsg">DB에 없는 브랜드 제품도 AI가 추정해줘요. 포장지 수치가 있으면 그게 더 정확해요.</p></div>
         <div class="picked" id="fpick" hidden>
           <div class="pk-top"><span class="pk-name" id="pkn"></span><button type="button" class="link" id="pkx">다시 검색</button></div>
           <div class="pk-kcal num" id="pkk"></div>
@@ -768,11 +1033,18 @@ canvas#fx { position: fixed; inset: 0; pointer-events: none; z-index: 70; width:
           </div>
           <div class="seg" id="pmul">${[0.5, 1, 1.5, 2].map((m) => `<button type="button" data-m="${m}" aria-pressed="${m === 1}">${m}인분</button>`).join('')}</div>
         </div>
-        <details class="manual" id="manual"><summary>찾는 음식이 없으면 직접 입력</summary>
+        <details class="manual" id="manual"><summary>찾는 음식이 없으면 직접 입력 (포장지 영양정보 보고)</summary>
         <div class="frow">
           <div class="field"><label for="mk">칼로리</label><input id="mk" type="number" inputmode="numeric" min="0" max="9000" placeholder="kcal"></div>
-          <div class="field"><label for="mn">음식</label><input id="mn" maxlength="60" placeholder="음식 이름" autocomplete="off"></div>
-        </div></details>
+          <div class="field"><label for="mn">음식</label><input id="mn" maxlength="60" placeholder="예: 한끼통살 갈릭맛" autocomplete="off"></div>
+        </div>
+        <div class="frow3">
+          <div class="field"><label for="mc">탄수화물</label><input id="mc" type="number" inputmode="decimal" min="0" step="any" placeholder="g (선택)"></div>
+          <div class="field"><label for="mp">단백질</label><input id="mp" type="number" inputmode="decimal" min="0" step="any" placeholder="g (선택)"></div>
+          <div class="field"><label for="mf">지방</label><input id="mf" type="number" inputmode="decimal" min="0" step="any" placeholder="g (선택)"></div>
+        </div>
+        <label class="savemine"><input type="checkbox" id="msave" checked> 내 음식으로 저장하기 · 다음부터 검색하면 바로 나와요</label>
+        </details>
         <div class="err" id="ferr"></div>
         <button class="primary">기록하기</button>
         <button type="button" class="ghost" data-dismiss>취소</button>
@@ -790,8 +1062,33 @@ canvas#fx { position: fixed; inset: 0; pointer-events: none; z-index: 70; width:
         shown = searchFoods(q);
         fres.innerHTML = shown.length ? shown.map((f, i) => `<button type="button" class="res" data-i="${i}">
             <span class="rn">${esc(pretty(f.n))}${f.b ? `<em>${esc(f.b)}</em>` : ''}</span>
-            <span class="rk num">${Math.round((f.k * f.w) / 100).toLocaleString()} kcal<small>1인분${f.e ? '(추정)' : ''} ${f.w}${f.u}</small></span>
-          </button>`).join('') : `<p class="hint">"${esc(q)}" 검색 결과가 없어요. 짧게 써 보거나 아래에 칼로리를 직접 적어주세요.</p>`;
+            <span class="rk num">${Math.round((f.k * f.w) / 100).toLocaleString()} kcal<small>${f.mine ? '1인분 · <span class="mydel" data-del="' + f.mine + '">삭제</span>' : `1인분${f.e ? '(추정)' : ''} ${f.w}${f.u}`}</small></span>
+          </button>`).join('') : `<p class="hint">"${esc(q)}" 검색 결과가 없어요. 짧게 써 보거나, 아래 '직접 입력'에 포장지 영양정보를 적어 내 음식으로 저장해 두세요.</p>`;
+      };
+      const aibox = root.querySelector('#aibox'), aiMsg = root.querySelector('#aiMsg'), aiAsk = root.querySelector('#aiAsk');
+      const showAi = () => {
+        aibox.hidden = !fq.value.trim() || !!pick;
+        aiAsk.hidden = !aiReady();
+        if (!aiReady()) aiMsg.textContent = aiHint();
+      };
+      fq.addEventListener('input', showAi);
+      aiAsk.onclick = async () => {
+        const q = fq.value.trim(); if (!q || !aiReady()) return;
+        aiAsk.disabled = true; aiAsk.textContent = '🤖 AI가 찾아보는 중…'; aiMsg.textContent = '';
+        try {
+          const r = await AI.json(`한국 식품 영양 전문가로서 아래 음식(한국 브랜드 제품이면 그 제품)의 1회 제공량 기준 영양성분을 알려줘. 브랜드 제품이면 제품 포장 영양정보 기준으로, 확실하지 않으면 비슷한 제품으로 합리적으로 추정해.
+음식: "${q}"
+JSON 하나로만 답해: {"name": "제품/음식 이름(브랜드 포함)", "serving": "1회 제공량 설명 예: 1팩(100g)", "kcal": 숫자, "carb": 숫자(g), "protein": 숫자(g), "fat": 숫자(g), "confidence": "high|medium|low", "note": "한 문장 설명"}`);
+          const k = Math.round(Number(r && r.kcal));
+          if (!Number.isFinite(k) || k < 0 || k > 9000) throw { code: 'invalid_json' };
+          mn.value = String(r.name || q).slice(0, 60); mk.value = k;
+          [['#mc', r.carb], ['#mp', r.protein], ['#mf', r.fat]].forEach(([id, v]) => { const x = Number(v); root.querySelector(id).value = v !== null && v !== '' && Number.isFinite(x) && x >= 0 ? Math.round(x * 10) / 10 : ''; });
+          root.querySelector('#manual').open = true;
+          const conf = { high: '꽤 정확', medium: '대략', low: '어림짐작' }[r.confidence] || '추정';
+          aiMsg.textContent = `AI 추정(${conf}) · ${r.serving || '1회 제공량'} 기준 ${k}kcal${r.note ? ' · ' + r.note : ''} — 아래 값을 확인하고 기록하기를 눌러주세요.`;
+        } catch (e) { aiMsg.textContent = aiErr(e); }
+        aiAsk.disabled = false; aiAsk.textContent = '🤖 AI에게 다시 물어보기';
+        showAi();
       };
       loadFoods().then(draw).catch(() => { fres.innerHTML = '<p class="hint">음식 데이터를 불러오지 못했어요. 칼로리를 직접 적어주세요.</p>'; });
       let t; fq.addEventListener('input', () => { clearTimeout(t); t = setTimeout(draw, 120); });
@@ -799,14 +1096,18 @@ canvas#fx { position: fixed; inset: 0; pointer-events: none; z-index: 70; width:
       const choose = (f) => {
         pick = f;
         root.querySelector('#pkn').textContent = pretty(pick.n) + (pick.b ? ` (${pick.b})` : '');
-        root.querySelector('#pkper').textContent = `100${pick.u}당 ${pick.k}kcal · 1인분 ${pick.w}${pick.u}`;
+        root.querySelector('#pkper').textContent = pick.mine ? `내가 등록한 음식 · 1인분 ${Math.round(pick.k / 100)}kcal` : `100${pick.u}당 ${pick.k}kcal · 1인분 ${pick.w}${pick.u}`;
         root.querySelector('#pu').textContent = pick.u;
         pa.value = pick.w; setMul(1); recalc();
-        mn.value = (pretty(pick.n) + (pick.b ? ` (${pick.b})` : '')).slice(0, 60);
-        fres.hidden = true; fpick.hidden = false; root.querySelector('#manual').open = false;
+        mn.value = (pretty(pick.n) + (pick.b && !pick.mine ? ` (${pick.b})` : '')).slice(0, 60);
+        fres.hidden = true; fpick.hidden = false; root.querySelector('#manual').open = false; aibox.hidden = true;
       };
-      fres.addEventListener('click', (e) => { const b = e.target.closest('.res'); if (b) choose(shown[Number(b.dataset.i)]); });
-      root.querySelector('#pkx').onclick = () => { pick = null; fpick.hidden = true; fres.hidden = false; mk.value = ''; mn.value = ''; fq.focus(); };
+      fres.addEventListener('click', (e) => {
+        const del = e.target.closest('[data-del]');
+        if (del) { e.stopPropagation(); S.myFoods = S.myFoods.filter((m) => m.id !== del.dataset.del); persist(); draw(); toast('내 음식에서 지웠어요'); return; }
+        const b = e.target.closest('.res'); if (b) choose(shown[Number(b.dataset.i)]);
+      });
+      root.querySelector('#pkx').onclick = () => { pick = null; fpick.hidden = true; fres.hidden = false; mk.value = ''; mn.value = ''; showAi(); fq.focus(); };
       root.querySelector('#pmul').addEventListener('click', (e) => {
         const b = e.target.closest('button'); if (!b || !pick) return;
         const m = Number(b.dataset.m); setMul(m); pa.value = Math.round(pick.w * m * 10) / 10; recalc();
@@ -825,9 +1126,58 @@ canvas#fx { position: fixed; inset: 0; pointer-events: none; z-index: 70; width:
         const m = { id: uid(), slot, name, kcal };
         if (pick) { const nt = scaleNut(pick.nu, Number(pa.value)); if (nt) m.nut = nt; }
         if (pick && Number(pa.value) > 0) { m.amt = Number(pa.value); m.unit = pick.u; }
-        ensureDay(sel).meals.push(m);
+        if (!pick) {
+          const nt = {}; [['c', '#mc'], ['p', '#mp'], ['f', '#mf']].forEach(([k, id]) => { const v = root.querySelector(id).value; if (v !== '' && Number(v) >= 0) nt[k] = Math.round(Number(v) * 10) / 10; });
+          if (Object.keys(nt).length) m.nut = nt;
+          if (root.querySelector('#msave').checked) {
+            S.myFoods = (S.myFoods || []).filter((x) => x.n !== name);
+            S.myFoods.unshift({ id: uid(), n: name, kcal, ...(m.nut ? { nut: m.nut } : {}) });
+          }
+        }
+        const day = ensureDay(sel); day.meals.push(m); if (day.skip) delete day.skip[slot];
         closeSheet(); commit(sel); toast(`${slot}에 ${kcal}kcal 기록했어요`);
       };
+    });
+  }
+
+  function openSettings() {
+    const has = !!geminiKey();
+    openSheet(`
+      <h3>AI 설정</h3>
+      <form id="f" class="sheet-in" style="gap:14px">
+        ${CLAUDE_AI ? '<div class="banner win">지금은 claude.ai 안에서 열려 있어서 키 없이 Claude AI가 동작해요.</div>' : ''}
+        <div class="rules"><b>Gemini 무료 키 받는 법</b><br>
+          1. 휴대폰이나 PC 브라우저에서 <b>aistudio.google.com/apikey</b> 접속<br>
+          2. 구글 계정으로 로그인 (약관 동의)<br>
+          3. <b>API 키 만들기(Create API key)</b> 누르기<br>
+          4. 나온 키(AIza로 시작)를 복사해서 아래에 붙여넣기<br>
+          <span style="font-size:12px">카드 등록 없이 무료 사용량 안에서 써요. 무료로 쓰면 입력한 내용이 구글 서비스 개선에 쓰일 수 있어요. 키는 이 기기에만 저장돼요.</span></div>
+        <div class="field"><label for="gkey">Gemini API 키 ${has ? '<span class="src">저장됨 ✓</span>' : ''}</label>
+          <input id="gkey" type="password" autocomplete="off" spellcheck="false" placeholder="${has ? '새 키로 바꾸려면 붙여넣기' : 'AIza...'}"></div>
+        <div class="err" id="ferr"></div>
+        <p class="cap" id="gmsg"></p>
+        <button class="primary">저장하고 연결 확인</button>
+        ${has ? '<button type="button" class="ghost danger" id="gdel">키 지우기</button>' : ''}
+        <button type="button" class="ghost" data-dismiss>닫기</button>
+      </form>`, (root) => {
+      const msg = root.querySelector('#gmsg'), err = root.querySelector('#ferr');
+      root.querySelector('#f').onsubmit = async (e) => {
+        e.preventDefault();
+        const v = root.querySelector('#gkey').value.trim();
+        if (v) { try { localStorage.setItem(AIKEY, v); } catch (x) { err.textContent = '이 브라우저에 저장하지 못했어요.'; return; } }
+        if (!geminiKey()) { err.textContent = '키를 붙여넣어 주세요.'; return; }
+        err.textContent = ''; msg.textContent = '연결 확인 중…';
+        const g = geminiAI();
+        try {
+          await g('"연결 성공"이라고만 답해.');
+          if (!CLAUDE_AI) AI = g;
+          aiOff = false;
+          msg.textContent = '';
+          closeSheet(); render(); toast('Gemini 연결 완료! 이제 AI 기능을 쓸 수 있어요');
+        } catch (x) { msg.textContent = aiErr(x) || '연결하지 못했어요.'; if (!CLAUDE_AI) AI = g; }
+      };
+      const del = root.querySelector('#gdel');
+      if (del) del.onclick = () => { try { localStorage.removeItem(AIKEY); } catch (x) {} if (!CLAUDE_AI) AI = null; closeSheet(); render(); toast('Gemini 키를 지웠어요'); };
     });
   }
 
