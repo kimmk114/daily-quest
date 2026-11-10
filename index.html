@@ -183,6 +183,9 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
 .wtext { width: 100%; box-sizing: border-box; padding: 12px 14px; border-radius: 12px; border: 1px solid var(--line); background: var(--bg); color: var(--fg); font: inherit; font-size: 16px; line-height: 1.5; resize: vertical; }
 .wacts { display: flex; gap: 8px; align-items: stretch; }
 .wreport { white-space: pre-wrap; font-size: 14px; line-height: 1.65; }
+.wpseg button { padding: 5px 12px; font-size: 12px; }
+.wdays { display: flex; flex-wrap: wrap; gap: 6px; }
+.wdays .chip { font-size: 12px; padding: 5px 10px; }
 .frow3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 8px; }
 .savemine { display: flex; align-items: center; gap: 8px; margin-top: 10px; font-size: 13px; color: var(--muted); }
 .mydel { color: var(--danger, #e5534b); text-decoration: underline; cursor: pointer; }
@@ -675,7 +678,8 @@ canvas#fx { position: fixed; inset: 0; pointer-events: none; z-index: 70; width:
           <div class="kcal-top"><b style="font-family:var(--font-display);font-weight:400;font-size:17px">🤖 AI 운동 분석</b>${w && w.at ? `<span class="cap">${new Date(w.at).toLocaleString('ko-KR', { month: 'numeric', day: 'numeric', hour: 'numeric', minute: '2-digit' })}</span>` : ''}</div>
           <div class="wreport" id="wreptext">${esc(w && w.report ? w.report : '')}</div>
           <p class="cap" id="wrepnote"></p>
-        </div>`}`;
+        </div>`}
+        ${periodHTML()}`;
     } else {
       const over = st.kcal > S.goalKcal;
       const skip = d.skip || {};
@@ -757,6 +761,145 @@ ${lines}`, { modelTier: 'quick' });
     mealBusy = false;
     render();
   }
+  /* ---------- 주간/월간 운동 리포트 (S.wreports 에 저장 → 계정 동기화) ---------- */
+  let wPeriod = 'week', perBusy = false;
+  function periodRange(kind, date) {
+    const d = parse(date);
+    const md = (x) => `${parse(x).getMonth() + 1}/${parse(x).getDate()}`;
+    if (kind === 'week') {
+      const from = addDays(date, -d.getDay()), to = addDays(from, 6);
+      return { key: 'W:' + from, from, to, label: `${md(from)} ~ ${md(to)}`, name: '주간' };
+    }
+    const from = ymd(new Date(d.getFullYear(), d.getMonth(), 1)), to = ymd(new Date(d.getFullYear(), d.getMonth() + 1, 0));
+    return { key: 'M:' + from.slice(0, 7), from, to, label: `${d.getFullYear()}년 ${d.getMonth() + 1}월`, name: '월간' };
+  }
+  function periodWorkouts(r) {
+    const out = [];
+    for (let dt = r.from; dt <= r.to; dt = addDays(dt, 1)) { const w = S.days[dt] && S.days[dt].workout; if (w && w.text) out.push({ date: dt, text: w.text, report: w.report || '' }); }
+    return out;
+  }
+  const periodSig = (list) => list.map((x) => x.date + ':' + x.text.length).join(',') + '|' + JSON.stringify(S.profile || {});
+  function periodHTML() {
+    const r = periodRange(wPeriod, sel), list = periodWorkouts(r);
+    const saved = (S.wreports || {})[r.key], fresh = saved && saved.sig === periodSig(list);
+    const canMake = aiReady() && list.length > 0 && !fresh;
+    return `${profileCardHTML()}<div class="kcal" id="wper">
+      <div class="kcal-top"><b style="font-family:var(--font-display);font-weight:400;font-size:17px">📅 ${r.name} 운동 리포트</b>
+        <div class="seg wpseg"><button type="button" data-wp="week" aria-pressed="${wPeriod === 'week'}">주간</button><button type="button" data-wp="month" aria-pressed="${wPeriod === 'month'}">월간</button></div></div>
+      <p class="cap">${r.label} · 운동 <b style="color:var(--fg)">${list.length}회</b>${list.length ? '' : ' · 이 기간엔 운동 기록이 없어요'}</p>
+      ${list.length ? `<div class="wdays">${list.map((x) => `<button type="button" class="chip" data-go="${x.date}">${parse(x.date).getMonth() + 1}/${parse(x.date).getDate()} ${WD[parse(x.date).getDay()]}</button>`).join('')}</div>` : ''}
+      <div class="wreport" id="wpertext" ${saved ? '' : 'hidden'}>${saved ? esc(saved.text) : ''}</div>
+      <p class="cap" id="wpernote">${saved ? `${new Date(saved.at).toLocaleString('ko-KR', { month: 'numeric', day: 'numeric', hour: 'numeric', minute: '2-digit' })}에 만든 리포트${fresh ? '' : ' · 그 뒤로 운동 기록이나 체형 정보가 바뀌었어요'}` : (list.length && !aiReady() ? aiHint() : '')}</p>
+      <div class="wacts">
+        ${canMake ? `<button class="primary" id="wperBtn" style="flex:1;padding:10px">🤖 ${saved ? '리포트 다시 만들기' : r.name + ' 리포트 만들기'}</button>` : ''}
+        ${saved ? '<button class="ghost" id="wperCopy" style="width:auto;padding:10px 16px">복사</button>' : ''}
+      </div>
+      <p class="cap">지난 주·지난 달 리포트는 위 달력에서 그 기간 날짜를 누르면 볼 수 있어요.</p>
+    </div>`;
+  }
+  /* ---------- 체형 정보 (S.profile) ---------- */
+  const BODY = ['마른 편', '보통', '근육형', '통통한 편', '복부 비만형'];
+  const GOALS = ['체중 감량', '근육 증가', '체력·건강 유지', '체형 교정·자세', '대회·기록 향상'];
+  function profileText() {
+    const p = S.profile; if (!p) return '체형 정보: (입력 안 함)';
+    const bmi = p.height && p.weight ? (p.weight / ((p.height / 100) ** 2)).toFixed(1) : null;
+    return '체형 정보: ' + [p.sex, p.age && p.age + '세', p.height && p.height + 'cm', p.weight && p.weight + 'kg', bmi && 'BMI ' + bmi, p.body && '체형 ' + p.body, p.goal && '목표 ' + p.goal, p.note && '부상·주의/선호: ' + p.note].filter(Boolean).join(', ');
+  }
+  function profileCardHTML() {
+    const p = S.profile;
+    const line = p ? [p.sex, p.age && p.age + '세', p.height && p.height + 'cm', p.weight && p.weight + 'kg', p.body, p.goal && '목표: ' + p.goal].filter(Boolean).join(' · ') : '';
+    return `<div class="kcal profile">
+      <div class="kcal-top"><b style="font-family:var(--font-display);font-weight:400;font-size:17px">🧍 내 체형 정보</b><button class="link" id="profBtn">${p ? '수정' : '입력하기'}</button></div>
+      <p class="cap" style="min-height:0">${p ? esc(line) + (p.note ? '<br>주의: ' + esc(p.note) : '') : '키·몸무게·체형·목표를 넣으면 AI가 거기에 맞춰 부족한 운동과 추천 운동을 알려줘요.'}</p>
+    </div>`;
+  }
+  function openProfile() {
+    const p = S.profile || {};
+    let sex = p.sex || '', body = p.body || '', goal = p.goal || '';
+    openSheet(`
+      <h3>내 체형 정보</h3>
+      <form id="f" class="sheet-in" style="gap:14px">
+        <div class="field"><label>성별</label>${segHTML('sex', ['남성', '여성'], sex)}</div>
+        <div class="frow3" style="margin-top:0">
+          <div class="field"><label for="pa1">나이</label><input id="pa1" type="number" inputmode="numeric" min="10" max="100" value="${p.age || ''}" placeholder="세"></div>
+          <div class="field"><label for="ph">키</label><input id="ph" type="number" inputmode="decimal" min="100" max="230" step="any" value="${p.height || ''}" placeholder="cm"></div>
+          <div class="field"><label for="pw">몸무게</label><input id="pw" type="number" inputmode="decimal" min="25" max="250" step="any" value="${p.weight || ''}" placeholder="kg"></div>
+        </div>
+        <div class="field"><label>체형</label>${segHTML('body', BODY, body)}</div>
+        <div class="field"><label>운동 목표</label>${segHTML('goal', GOALS, goal)}</div>
+        <div class="field"><label for="pn">부상·주의할 점, 하고 싶은 운동 (선택)</label><input id="pn" maxlength="120" value="${esc(p.note || '')}" placeholder="예: 왼쪽 무릎이 약함, 홈트 위주, 헬스장 주 3회" autocomplete="off"></div>
+        <div class="err" id="ferr"></div>
+        <button class="primary">저장</button>
+        ${S.profile ? '<button type="button" class="ghost danger" id="pdel">체형 정보 지우기</button>' : ''}
+        <button type="button" class="ghost" data-dismiss>취소</button>
+      </form>`, (root) => {
+      wireSeg(root, 'sex', (v) => (sex = v));
+      wireSeg(root, 'body', (v) => (body = v));
+      wireSeg(root, 'goal', (v) => (goal = v));
+      const num = (id, lo, hi) => { const v = root.querySelector(id).value; if (v === '') return null; const n = Number(v); return n >= lo && n <= hi ? Math.round(n * 10) / 10 : NaN; };
+      root.querySelector('#f').onsubmit = (e) => {
+        e.preventDefault();
+        const age = num('#pa1', 10, 100), height = num('#ph', 100, 230), weight = num('#pw', 25, 250);
+        if ([age, height, weight].some((x) => Number.isNaN(x))) { root.querySelector('#ferr').textContent = '나이·키·몸무게를 올바른 숫자로 적어주세요.'; return; }
+        const note = root.querySelector('#pn').value.trim();
+        const np = { sex, age, height, weight, body, goal, note };
+        Object.keys(np).forEach((k) => { if (np[k] === null || np[k] === '') delete np[k]; });
+        if (!Object.keys(np).length) { root.querySelector('#ferr').textContent = '한 가지 이상 입력해 주세요.'; return; }
+        S.profile = np; closeSheet(); persist(); render(); toast('체형 정보를 저장했어요 · 다음 분석부터 반영돼요');
+      };
+      const del = root.querySelector('#pdel');
+      if (del) del.onclick = () => { delete S.profile; closeSheet(); persist(); render(); toast('체형 정보를 지웠어요'); };
+    });
+  }
+
+  async function makePeriodReport() {
+    if (perBusy || !aiReady()) return;
+    const r = periodRange(wPeriod, sel), list = periodWorkouts(r);
+    if (!list.length) return;
+    perBusy = true;
+    const out = $('#wpertext'), note = $('#wpernote'), btn = $('#wperBtn');
+    if (btn) btn.disabled = true;
+    out.hidden = false; out.textContent = `${r.name} 운동 기록 ${list.length}개를 읽고 리포트를 만드는 중…`; note.textContent = '';
+    // 같은 기간 식단 요약 (기록한 날만)
+    const mealDays = []; for (let dt = r.from; dt <= r.to; dt = addDays(dt, 1)) { const st = status(dt); if (getDay(dt).meals.length) mealDays.push(st.kcal); }
+    const avgK = mealDays.length ? Math.round(mealDays.reduce((a, b) => a + b, 0) / mealDays.length) : null;
+    const logs = list.map((x) => `[${x.date} ${WD[parse(x.date).getDay()]}] ${x.text.slice(0, 500)}${x.report ? `\n  (그날 AI 분석 요약: ${x.report.split('\n').slice(0, 2).join(' ').slice(0, 160)})` : ''}`).join('\n');
+    const days = Math.round((parse(r.to) - parse(r.from)) / 86400000) + 1;
+    const prompt = `너는 친절하지만 솔직한 퍼스널 트레이너야. 아래는 사용자의 ${r.name} 운동 기록이야 (${r.label}, ${days}일 중 ${list.length}일 운동).
+${logs}
+식단: ${avgK === null ? '기록 없음' : `기록한 ${mealDays.length}일 평균 ${avgK}kcal (목표 ${S.goalKcal}kcal)`}
+${profileText()}
+
+한국어로 ${r.name} 리포트를 써줘. 체형 정보와 목표가 있으면 반드시 그 기준으로 판단해. 마크다운 기호(#, *, -) 없이, 아래 제목을 이모지와 함께 쓰고 각 2~4줄, 전체 25줄 이내.
+📊 한눈에 보기 — 운동 횟수·빈도, 총 운동 시간 추정
+✅ 충분한 운동 — 이미 잘 채우고 있는 부위·운동 종류 (근거: 날짜·횟수)
+❗ 부족한 운동 — 빠졌거나 적은 부위·종류 (상체/하체/코어/유산소/유연성 균형과 목표 기준)
+🏋️ 추천 운동 — 부족한 부분을 채울 구체적인 운동 3~5개, 각 세트×횟수 또는 시간 포함. 부상·주의사항이 있으면 피해서
+⚠️ 반복된 신호 — 통증·피로·수면 부족 패턴 (심하면 쉬거나 전문가 상담 권유)
+🎯 다음 ${wPeriod === 'week' ? '주' : '달'} 목표 — 구체적인 목표 3개
+💬 한마디 — 응원 한 줄`;
+    try {
+      const { text, truncated } = await AI(prompt, { cache: false, onText: ({ text: t }) => { if ($('#wpertext')) $('#wpertext').textContent = t; } });
+      (S.wreports ||= {})[r.key] = { text, at: Date.now(), sig: periodSig(list) };
+      persist();
+      if (tab === 'workout') { render(); if (truncated && $('#wpernote')) $('#wpernote').textContent += ' · 길어서 중간에 끊겼어요'; }
+      toast(`${r.name} 리포트를 저장했어요`);
+    } catch (e) {
+      const m = aiErr(e);
+      if ($('#wpertext')) { $('#wpertext').textContent = e.text || ''; $('#wpertext').hidden = !e.text; }
+      if ($('#wpernote')) $('#wpernote').textContent = m;
+      if ($('#wperBtn')) $('#wperBtn').disabled = false;
+    }
+    perBusy = false;
+  }
+  async function copyPeriodReport() {
+    const r = periodRange(wPeriod, sel), saved = (S.wreports || {})[r.key];
+    if (!saved) return;
+    const txt = `[하루 퀘스트 ${r.name} 운동 리포트 · ${r.label}]\n\n${saved.text}`;
+    try { await navigator.clipboard.writeText(txt); toast('리포트를 복사했어요'); }
+    catch (e) { const ta = document.createElement('textarea'); ta.value = txt; document.body.appendChild(ta); ta.select(); try { document.execCommand('copy'); toast('리포트를 복사했어요'); } catch (x) { toast('복사하지 못했어요'); } ta.remove(); }
+  }
+
   function workoutHistory(date, n) {
     const out = [];
     for (let i = 1; i <= n; i++) { const dt = addDays(date, -i); const w = S.days[dt] && S.days[dt].workout; if (w && w.text) out.push({ date: dt, text: w.text }); }
@@ -778,7 +921,9 @@ ${lines}`, { modelTier: 'quick' });
 최근 7일 운동 기록:
 ${hist}
 오늘 먹은 칼로리: ${st.kcal}kcal (목표 ${S.goalKcal}kcal)
+${profileText()}
 
+체형 정보와 목표가 있으면 그 기준으로 판단해.
 형식: 마크다운 기호(#, *, -) 없이, 아래 5개 제목을 이모지와 함께 쓰고 각 1~3줄, 전체 15줄 이내.
 💪 오늘 운동 요약 — 종류·볼륨·강도, 추정 소모 칼로리 범위
 👍 잘한 점
@@ -801,6 +946,11 @@ ${hist}
     if (e.target.id === 'mnoteBtn') analyzeMeals();
     if (e.target.id === 'wsave') { const v = ($('#wtext').value || '').trim(); const d = ensureDay(sel); if (v) d.workout = { ...(d.workout || {}), text: v }; else delete d.workout; persist(); render(); toast(v ? '운동 기록을 저장했어요' : '운동 기록을 지웠어요'); }
     if (e.target.id === 'wai') analyzeWorkout();
+    if (e.target.id === 'wperBtn') makePeriodReport();
+    if (e.target.id === 'profBtn') openProfile();
+    if (e.target.id === 'wperCopy') copyPeriodReport();
+    const wp = e.target.closest('[data-wp]'); if (wp) { wPeriod = wp.dataset.wp; render(); }
+    const go = e.target.closest('[data-go]'); if (go) { sel = go.dataset.go; render(); window.scrollTo({ top: 0, behavior: 'smooth' }); }
     if (e.target.id === 'editR') { editRoutines = !editRoutines; render(); }
     if (e.target.id === 'goalBtn') openGoal();
   });
