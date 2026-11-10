@@ -177,6 +177,8 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
 .ai-btn { width: 100%; padding: 11px 14px; border-radius: 12px; border: 1px dashed var(--accent); color: var(--accent); font-weight: 600; font-size: 14px; }
 .ai-btn:disabled { opacity: .6; }
 .aibox { display: flex; flex-direction: column; gap: 6px; }
+.results .nores { display: flex; flex-direction: column; gap: 10px; }
+.results .nores p { margin: 0; }
 .cap { font-size: 12px; color: var(--muted); margin: 0; }
 .wtext { width: 100%; box-sizing: border-box; padding: 12px 14px; border-radius: 12px; border: 1px solid var(--line); background: var(--bg); color: var(--fg); font: inherit; font-size: 16px; line-height: 1.5; resize: vertical; }
 .wacts { display: flex; gap: 8px; align-items: stretch; }
@@ -1061,13 +1063,15 @@ ${hist}
       const setMul = (m) => root.querySelectorAll('#pmul button').forEach((b) => b.setAttribute('aria-pressed', String(Number(b.dataset.m) === m)));
       const draw = () => {
         const q = fq.value.trim();
+        if (!pick) fres.hidden = false;
         if (!q) { fres.innerHTML = '<p class="hint">음식 이름을 입력하면 칼로리를 자동으로 찾아줘요.</p>'; return; }
         if (!FOODS) { fres.innerHTML = '<p class="hint">음식 데이터를 불러오는 중…</p>'; return; }
         shown = searchFoods(q);
         fres.innerHTML = shown.length ? shown.map((f, i) => `<button type="button" class="res" data-i="${i}">
             <span class="rn">${esc(pretty(f.n))}${f.b ? `<em>${esc(f.b)}</em>` : ''}</span>
             <span class="rk num">${Math.round((f.k * f.w) / 100).toLocaleString()} kcal<small>${f.mine ? '1인분 · <span class="mydel" data-del="' + f.mine + '">삭제</span>' : `1인분${f.e ? '(추정)' : ''} ${f.w}${f.u}`}</small></span>
-          </button>`).join('') : `<p class="hint">"${esc(q)}" 검색 결과가 없어요. 짧게 써 보거나, 아래 '직접 입력'에 포장지 영양정보를 적어 내 음식으로 저장해 두세요.</p>`;
+          </button>`).join('') : `<div class="hint nores"><p>"${esc(q)}" 검색 결과가 없어요.</p>${aiReady() ? '<button type="button" class="ai-btn" data-aiask>🤖 AI에게 칼로리 물어보기</button>' : `<p>${aiHint()}</p>`}<p>또는 아래 '직접 입력'에 포장지 영양정보를 적어 내 음식으로 저장해 두세요.</p></div>`;
+        const ab = root.querySelector('#aibox'); if (ab && !shown.length) ab.hidden = true;
       };
       const aibox = root.querySelector('#aibox'), aiMsg = root.querySelector('#aiMsg'), aiAsk = root.querySelector('#aiAsk');
       const showAi = () => {
@@ -1092,7 +1096,7 @@ JSON 하나로만 답해: {"name": "제품/음식 이름(브랜드 포함)", "se
           aiMsg.textContent = `AI 추정(${conf}) · ${r.serving || '1회 제공량'} 기준 ${k}kcal${r.note ? ' · ' + r.note : ''} — 아래 값을 확인하고 기록하기를 눌러주세요.`;
         } catch (e) { aiMsg.textContent = aiErr(e); }
         aiAsk.disabled = false; aiAsk.textContent = '🤖 AI에게 다시 물어보기';
-        showAi();
+        showAi(); aibox.hidden = !fq.value.trim() || !!pick;
       };
       loadFoods().then(draw).catch(() => { fres.innerHTML = '<p class="hint">음식 데이터를 불러오지 못했어요. 칼로리를 직접 적어주세요.</p>'; });
       let t; fq.addEventListener('input', () => { clearTimeout(t); t = setTimeout(draw, 120); });
@@ -1107,6 +1111,7 @@ JSON 하나로만 답해: {"name": "제품/음식 이름(브랜드 포함)", "se
         fres.hidden = true; fpick.hidden = false; root.querySelector('#manual').open = false; aibox.hidden = true;
       };
       fres.addEventListener('click', (e) => {
+        if (e.target.closest('[data-aiask]')) { fres.hidden = true; aibox.hidden = false; aiAsk.click(); return; }
         const del = e.target.closest('[data-del]');
         if (del) { e.stopPropagation(); S.myFoods = S.myFoods.filter((m) => m.id !== del.dataset.del); persist(); draw(); toast('내 음식에서 지웠어요'); return; }
         const b = e.target.closest('.res'); if (b) choose(shown[Number(b.dataset.i)]);
